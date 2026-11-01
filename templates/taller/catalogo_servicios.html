@@ -1,0 +1,611 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Catálogo de Servicios | Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+<div id="usuario-sesion" data-username="{{ usuario_nombre }}" class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+
+  <!-- HEADER MODULAR -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Gestión de Catálogo</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Catálogo de Servicios</h1>
+      <p class="text-xs text-slate-400 font-medium">Tipos de mantenimiento, tarifas base y tiempos estimados de entrega</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        onclick="openModal('modalCrear')"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+        <span>Nuevo Concepto</span>
+      </button>
+    </div>
+  </header>
+
+
+  <main class="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+
+
+  <!-- BARRA DE FILTROS Y BÚSQUEDA -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+    <div>
+      <h2 class="text-base font-extrabold text-slate-900 uppercase tracking-tight">Servicios Registrados</h2>
+      <p class="text-xs text-slate-500 font-medium">Listado con control de tarifas, tiempos estimados y disponibilidad operativa</p>
+    </div>
+
+    <!-- BUSCADOR CON DESPLEGABLE DE CRITERIO -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-xl">
+      <div class="flex items-center bg-slate-100 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-orange-500 transition-all w-full">
+        <span class="px-3 text-[11px] font-black uppercase tracking-wider text-slate-600 bg-slate-200/60 border-r border-slate-200 py-2.5 shrink-0">
+          Filtro
+        </span>
+        <select id="selectCategoriaBusqueda" class="px-3 py-2 bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer border-r border-slate-200 shrink-0">
+          <option value="global" selected>Todo</option>
+          <option value="0">ID</option>
+          <option value="1">Concepto / Servicio</option>
+          <option value="2">Duración Est.</option>
+          <option value="4">Estado</option>
+        </select>
+        <div class="relative w-full flex items-center">
+          <input
+            type="text"
+            id="inputBusquedaCustom"
+            placeholder="Escribe para buscar..."
+            class="w-full pl-3 pr-9 py-2 bg-transparent text-xs text-slate-900 placeholder-slate-400 font-mono outline-none"
+          >
+          <svg class="w-4 h-4 absolute right-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- PANEL PRINCIPAL CON TABLA DATATABLES -->
+  <main class="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+
+
+    <!-- TABLA DE SERVICIOS -->
+    <div class="overflow-x-auto rounded-xl border border-slate-200">
+      <table id="tablaServicios" class="w-full text-left border-collapse">
+        <thead class="bg-slate-900 text-white text-[11px] font-black uppercase tracking-wider">
+          <tr>
+            <th class="p-3.5 border-b border-slate-800">ID</th>
+            <th class="p-3.5 border-b border-slate-800">Concepto / Servicio</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Duración Est.</th>
+            <th class="p-3.5 border-b border-slate-800 text-right">Precio Base</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Estado</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-xs font-medium">
+          {% for servicio in servicios %}
+            <tr class="hover:bg-slate-50/80 transition-colors">
+
+              <!-- ID -->
+              <td class="p-3.5">
+                <span class="px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-[11px] font-bold rounded-lg border border-slate-800">
+                  #{{ servicio.id_cat_servicio }}
+                </span>
+              </td>
+
+              <!-- NOMBRE -->
+              <td class="p-3.5 font-bold text-slate-900">
+                <span class="{% if not servicio.activo %}line-through text-slate-400{% else %}text-slate-900{% endif %}">
+                  {{ servicio.nombre }}
+                </span>
+              </td>
+
+              <!-- DURACIÓN ESTIMADA -->
+              <td class="p-3.5 text-center">
+                <span class="inline-flex items-center gap-1 font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                  <svg class="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {{ servicio.duracion_estimada }}
+                </span>
+              </td>
+
+              <!-- PRECIO BASE -->
+              <td class="p-3.5 text-right font-mono font-black text-emerald-600 text-sm">
+                ${{ servicio.precio_base }}
+              </td>
+
+              <!-- ESTADO -->
+              <td class="p-3.5 text-center">
+                {% if servicio.activo %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md border border-emerald-200 uppercase">
+                    Activo
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-slate-200 text-slate-600 rounded-md border border-slate-300 uppercase">
+                    Inactivo
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- ACCIONES -->
+              <td class="p-3.5 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <!-- VER FICHA -->
+                  <button
+                    type="button"
+                    onclick="verServicio('{{ servicio.id_cat_servicio }}')"
+                    class="p-2 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg border border-transparent transition"
+                    title="Ver Ficha"
+                  >
+                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+
+                  <!-- EDITAR -->
+                  <button
+                    type="button"
+                    onclick="editarServicio('{{ servicio.id_cat_servicio }}')"
+                    class="p-2 hover:bg-orange-50 text-slate-600 hover:text-orange-600 rounded-lg border border-transparent transition"
+                    title="Editar Concepto"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+
+                  <!-- CAMBIAR ESTADO -->
+                  <button
+                    type="button"
+                    onclick="cambiarEstadoServicio('{{ servicio.id_cat_servicio }}', '{{ servicio.nombre }}', {{ servicio.activo|lower }})"
+                    class="p-2 {% if servicio.activo %}hover:bg-red-50 text-slate-600 hover:text-red-600{% else %}hover:bg-emerald-50 text-slate-600 hover:text-emerald-600{% endif %} rounded-lg border border-transparent transition"
+                    title="{% if servicio.activo %}Desactivar{% else %}Activar{% endif %}"
+                  >
+                    {% if servicio.activo %}
+                      <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    {% else %}
+                      <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    {% endif %}
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="py-16 text-center bg-white">
+                <div class="max-w-xs mx-auto space-y-2">
+                  <svg class="w-12 h-12 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <p class="text-xs font-bold text-slate-700 uppercase">No hay conceptos registrados</p>
+                  <p class="text-xs text-slate-400">Usa el botón "Nuevo Concepto" para registrar servicios en el catálogo.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- MODAL CREAR -->
+<div id="modalCrear" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Nuevo Concepto de Servicio</h3>
+      </div>
+      <button onclick="closeModal('modalCrear')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'servicio_crear' %}" class="p-6 space-y-4">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Nombre del Servicio <span class="text-red-600">*</span></label>
+        {{ form.nombre }}
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Duración Estimada <span class="text-red-600">*</span></label>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            <select id="crear_duracion_hrs" onchange="actualizarDuracionCrear()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="00">00h</option>
+              <option value="01">01h</option>
+              <option value="02">02h</option>
+              <option value="03">03h</option>
+              <option value="04">04h</option>
+              <option value="05">05h</option>
+              <option value="06">06h</option>
+              <option value="07">07h</option>
+              <option value="08">08h</option>
+              <option value="09">09h</option>
+              <option value="10">10h</option>
+              <option value="11">11h</option>
+              <option value="12">12h</option>
+            </select>
+
+            <select id="crear_duracion_min" onchange="actualizarDuracionCrear()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="00">00m</option>
+              <option value="15">15m</option>
+              <option value="30">30m</option>
+              <option value="45">45m</option>
+            </select>
+          </div>
+
+          <input type="hidden" name="duracion_estimada" id="crear_duracion_estimada" value="00:00" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Precio Base (USD) <span class="text-red-600">*</span></label>
+          {{ form.precio_base }}
+        </div>
+      </div>
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('modalCrear')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white transition">Guardar Servicio</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modalEditar" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Editar Concepto de Servicio</h3>
+      </div>
+      <button onclick="closeModal('modalEditar')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <form id="formEditar" method="POST" class="p-6 space-y-4">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Nombre del Servicio <span class="text-red-600">*</span></label>
+        <input type="text" name="nombre" id="edit_nombre" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Duración Estimada <span class="text-red-600">*</span></label>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            <select id="edit_duracion_hrs" onchange="actualizarDuracionEditar()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="00">00h</option>
+              <option value="01">01h</option>
+              <option value="02">02h</option>
+              <option value="03">03h</option>
+              <option value="04">04h</option>
+              <option value="05">05h</option>
+              <option value="06">06h</option>
+              <option value="07">07h</option>
+              <option value="08">08h</option>
+              <option value="09">09h</option>
+              <option value="10">10h</option>
+              <option value="11">11h</option>
+              <option value="12">12h</option>
+            </select>
+
+            <select id="edit_duracion_min" onchange="actualizarDuracionEditar()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="00">00m</option>
+              <option value="15">15m</option>
+              <option value="30">30m</option>
+              <option value="45">45m</option>
+            </select>
+          </div>
+
+          <input type="hidden" name="duracion_estimada" id="edit_duracion_estimada" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Precio Base (USD) <span class="text-red-600">*</span></label>
+          <input type="number" step="0.01" name="precio_base" id="edit_precio_base" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('modalEditar')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-900 hover:bg-black text-white transition">Aplicar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL VER DETALLE -->
+<div id="modalVer" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border-4 border-slate-900 overflow-hidden p-6 space-y-4">
+    <div class="flex justify-between items-start border-b-2 border-slate-100 pb-3">
+      <div>
+        <span class="inline-block px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-xs font-black rounded-md mb-2 uppercase" id="view_id">#---</span>
+        <h3 id="view_nombre" class="text-lg font-black uppercase text-slate-900">---</h3>
+      </div>
+      <button onclick="closeModal('modalVer')" class="text-slate-400 hover:text-slate-900 font-mono text-xl">&times;</button>
+    </div>
+
+    <div class="space-y-3 text-xs">
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Duración Estimada</span>
+        <p id="view_duracion" class="font-mono font-bold text-slate-800">---</p>
+      </div>
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Precio Base Referencial</span>
+        <p id="view_precio" class="font-mono text-emerald-600 font-black text-base">---</p>
+      </div>
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado Operativo</span>
+        <p id="view_estado" class="font-bold uppercase">---</p>
+      </div>
+    </div>
+
+    <button onclick="closeModal('modalVer')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider rounded-xl transition">Cerrar Ficha</button>
+  </div>
+</div>
+
+<!-- MODAL CAMBIO DE ESTADO -->
+<div id="modalEstado" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border-4 border-slate-900 overflow-hidden p-6 space-y-4">
+    <div class="text-center space-y-2">
+      <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-500 mx-auto flex items-center justify-center font-black text-xl">!</div>
+      <h3 class="text-base font-black uppercase text-slate-900">Confirmar Cambio</h3>
+      <p class="text-xs text-slate-600">
+        ¿Desea <span id="estado_accion_txt" class="font-bold"></span> el servicio <strong id="estado_nombre_txt"></strong>?
+      </p>
+    </div>
+
+    <form id="formEstado" method="POST" action="">
+      {% csrf_token %}
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('modalEstado')" class="w-1/2 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" id="btnConfirmarEstado" class="w-1/2 py-2 rounded-xl text-xs font-black uppercase text-white transition bg-slate-900">Confirmar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Librerías de pdfmake para exportar a PDF personalizado -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  $.fn.dataTable.ext.errMode = 'none';
+
+  // Obtener de forma segura el usuario desde el DOM
+  const usuarioImprimio = document.getElementById('usuario-sesion')?.getAttribute('data-username') || 'Administrador';
+  const fechaGeneracion = new Date().toLocaleString('es-VE');
+
+
+  $(document).ready(function() {
+    if ($('#tablaServicios tbody tr td').length > 1) {
+      $('#tablaServicios').DataTable({
+        "order": [[1, 'asc']],
+        "dom": "<'row'<'col-12'tr>>" + "<'row mt-4 align-items-center'<'col-md-4 text-xs text-slate-500'i><'col-md-8 text-md-end'Bp>>",
+        "buttons": [
+            {
+                extend: 'print',
+                text: 'Imprimir',
+                className: 'btn btn-sm btn-dark rounded-xl text-xs font-bold me-1',
+                title: '',
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
+                messageTop: `
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f97316; padding-bottom: 12px; margin-bottom: 20px; font-family: sans-serif;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <img src="{% static 'img/logo del taller.jpg' %}" style="height: 60px; width: auto; border-radius: 8px;" alt="Logo Taller">
+                      <div>
+                        <h2 style="margin: 0; font-size: 20px; color: #0f172a; text-transform: uppercase; font-weight: 900;">Serviautomotriz Fernández C.A.</h2>
+                        <span style="font-size: 11px; font-weight: bold; color: #f97316; font-family: monospace;">RIF: J-29729665-4</span>
+                      </div>
+                    </div>
+                    <div style="text-align: right; font-size: 10px; color: #475569;">
+                      <p style="margin: 0;"><strong>Reporte:</strong> Directorio General de Clientes</p>
+                      <p style="margin: 2px 0 0 0;"><strong>Generado por:</strong> ${usuarioImprimio}</p>
+                      <p style="margin: 2px 0 0 0;"><strong>Fecha:</strong> ${fechaGeneracion}</p>
+                    </div>
+                  </div>
+                `
+            },
+            {
+                extend: 'excel',
+                text: 'Exportar a Excel',
+                className: 'btn btn-sm btn-success rounded-xl text-xs font-bold me-1',
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: 'Exportar a PDF',
+                className: 'btn btn-sm btn-danger rounded-xl text-xs font-bold',
+                orientation: 'portrait',
+                pageSize: 'LETTER',
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4, 5]
+
+                },
+
+                customize: function(doc) {
+                    // Estilos generales del documento
+                    doc.defaultStyle.fontSize = 8;
+                    doc.styles.tableHeader.fontSize = 9;
+                    doc.styles.tableHeader.fillColor = '#0f172a';
+                    doc.styles.tableHeader.color = '#ffffff';
+                    doc.styles.tableHeader.bold = true;
+
+                    // Añadir encabezado elegante al PDF
+                    doc.content.splice(0, 0, {
+                        margin: [0, 0, 0, 15],
+                        columns: [
+                            {
+                                width: '*',
+                                text: [
+                                    { text: 'SERVIAUTOMOTRIZ FERNÁNDEZ C.A.\n', fontSize: 14, bold: true, color: '#0f172a' },
+                                    { text: 'RIF: J-29729665-4\n', fontSize: 9, bold: true, color: '#f97316' },
+                                    { text: 'Directorio de Clientes y Propietarios', fontSize: 10, italics: true, color: '#64748b' }
+                                ]
+                            },
+                            {
+                                width: 'auto',
+                                alignment: 'right',
+                                text: [
+                                    { text: 'Generado por: ', bold: true, fontSize: 8 },
+                                    { text: `${usuarioImprimio}\n`, fontSize: 8 },
+                                    { text: 'Fecha: ', bold: true, fontSize: 8 },
+                                    { text: `${fechaGeneracion}`, fontSize: 8 }
+                                ]
+                            }
+                        ]
+                    });
+
+                    // Pie de página en todas las hojas
+                    doc['footer'] = function(page, pages) {
+                        return {
+                            columns: [
+                                {
+                                    alignment: 'left',
+                                    text: ' SICOVEN - Serviautomotriz Fernández | RIF: J-29729665-4',
+                                    fontSize: 7,
+                                    color: '#94a3b8',
+                                    margin: [20, 0]
+                                },
+                                {
+                                    alignment: 'right',
+                                    text: ['Página ', { text: page.toString() }, ' de ', { text: pages.toString() }],
+                                    fontSize: 7,
+                                    color: '#94a3b8',
+                                    margin: [0, 0, 20, 0]
+                                }
+                            ]
+                        };
+                    };
+                }
+            }
+        ],
+        "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+        "columnDefs": [{ "searchable": false, "orderable": false, "targets": [5] }]
+      });
+    }
+  });
+  // Buscador
+  $('#inputBusquedaCustom').on('input', function() {
+      if (!table) return;
+      const col = $('#selectCategoriaBusqueda').val();
+      if (col === "global") {
+          table.search(this.value).draw();
+      } else {
+          table.columns().search('');
+          table.column(col).search(this.value).draw();
+      }
+  });
+
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+  function setVal(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  }
+
+  function actualizarDuracionCrear() {
+    const hrs = document.getElementById('crear_duracion_hrs').value;
+    const min = document.getElementById('crear_duracion_min').value;
+    document.getElementById('crear_duracion_estimada').value = `${hrs}:${min}`;
+  }
+
+  function actualizarDuracionEditar() {
+    const hrs = document.getElementById('edit_duracion_hrs').value;
+    const min = document.getElementById('edit_duracion_min').value;
+    document.getElementById('edit_duracion_estimada').value = `${hrs}:${min}`;
+  }
+
+  async function fetchServicioData(id) {
+    try {
+      const res = await fetch(`api/${id}/`);
+      if (!res.ok) throw new Error();
+      const response = await res.json();
+      return response.data;
+    } catch {
+      Swal.fire('Error', 'Error al comunicarse con el servidor', 'error');
+    }
+  }
+
+  async function verServicio(id) {
+    const data = await fetchServicioData(id);
+    if (!data) return;
+
+    document.getElementById('view_id').textContent = `#${data.id}`;
+    document.getElementById('view_nombre').textContent = data.nombre;
+    document.getElementById('view_duracion').textContent = data.duracion_estimada;
+    document.getElementById('view_precio').textContent = `$${data.precio_base}`;
+    document.getElementById('view_estado').textContent = data.activo ? 'ACTIVO EN CATÁLOGO' : 'INACTIVO / DESHABILITADO';
+
+    openModal('modalVer');
+  }
+
+  async function editarServicio(id) {
+    const data = await fetchServicioData(id);
+    if (!data) return;
+
+    const formEditar = document.getElementById('formEditar');
+    if (formEditar) formEditar.action = `editar/${id}/`;
+
+    setVal('edit_nombre', data.nombre || '');
+    setVal('edit_precio_base', data.precio_base || '');
+
+    if (data.duracion_estimada) {
+      const partes = data.duracion_estimada.toString().split(':');
+      const hrs = partes[0] ? partes[0].padStart(2, '0') : '00';
+      const min = partes[1] ? partes[1].padStart(2, '0') : '00';
+
+      setVal('edit_duracion_hrs', hrs);
+      setVal('edit_duracion_min', min);
+    } else {
+      setVal('edit_duracion_hrs', '00');
+      setVal('edit_duracion_min', '00');
+    }
+
+    actualizarDuracionEditar();
+    openModal('modalEditar');
+  }
+
+  function cambiarEstadoServicio(id, nombre, estaActivo) {
+    const formEstado = document.getElementById('formEstado');
+    if (formEstado) formEstado.action = `cambiar-estado/${id}/`;
+
+    document.getElementById('estado_accion_txt').textContent = estaActivo ? 'desactivar' : 'activar';
+    document.getElementById('estado_nombre_txt').textContent = nombre;
+
+    const btnConfirmar = document.getElementById('btnConfirmarEstado');
+    btnConfirmar.className = estaActivo
+      ? "w-1/2 py-2 rounded-xl text-xs font-black uppercase text-white transition bg-red-600 hover:bg-red-700"
+      : "w-1/2 py-2 rounded-xl text-xs font-black uppercase text-white transition bg-emerald-600 hover:bg-emerald-700";
+
+    openModal('modalEstado');
+  }
+</script>
+<script src="{% static 'js/validaciones.js' %}"></script>
+{% endblock %}

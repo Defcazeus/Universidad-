@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel Web - Configuración General{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+  <!-- HEADER MODULAR -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Gestión del Landing</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Configuración General</h1>
+      <p class="text-xs text-slate-400 font-medium">Modifica en tiempo real la identidad visual, carruseles de fotos, avisos y lemas de la cara pública del taller.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <a
+        href="{% url 'galeria_dinamica' %}"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <span>Galería Dinámica</span>
+      </a>
+
+      <a
+        href="{% url 'noticias_promociones' %}"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <span>Noticias y Promociones</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO: CONFIGURACIÓN GENERAL -->
+  <div class="row justify-content-center">
+    <div class="col-md-6 bg-white p-4" style="border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.05);">
+      <h4 class="mb-4 text-dark" style="font-weight: 700;">Configuración de Estilo</h4>
+      <form method="POST" action="" class="p-0 shadow-none">
+        {% csrf_token %}
+        <input type="hidden" name="action_portal" value="ajustes_generales">
+
+        <label class="form-label fw-semibold">Nombre Comercial del Taller</label>
+        <input type="text" name="nombre_taller" value="{{ info.nombre_taller|default:'Serviautomotriz Fernández' }}" required class="mb-3">
+
+        <label class="form-label fw-semibold">Eslogan / Lema Principal</label>
+        <input type="text" name="lema" value="{{ info.lema|default:'Mecánica especializada a su alcance.' }}" required class="mb-3">
+
+        <div class="row mb-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold">Color Primario Corporativo</label>
+            <input type="color" name="color_primario" value="{{ info.color_primario|default:'#ff6600' }}" class="form-control form-control-color w-100" style="height: 45px;">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold">Familia Tipográfica</label>
+            <select name="tipografia" class="form-select p-2" style="border: 1px solid #ddd; border-radius:6px;">
+              <option value="Montserrat" {% if info.tipografia == 'Montserrat' %}selected{% endif %}>Montserrat (Moderna)</option>
+              <option value="Roboto" {% if info.tipografia == 'Roboto' %}selected{% endif %}>Roboto (Limpia)</option>
+              <option value="Poppins" {% if info.tipografia == 'Poppins' %}selected{% endif %}>Poppins (Elegante)</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="form-label fw-semibold">Teléfono de Soporte Público</label>
+        <input type="text" name="telefono_soporte" value="{{ info.telefono_soporte|default:'0424-5787208' }}" required class="mb-3">
+
+        <button type="submit" class="mt-2"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Guardar Cambios de Identidad</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

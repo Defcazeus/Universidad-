@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Clientes | Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          darkbg: '#09090b',
+          surface: '#121215',
+          borderline: '#27272a',
+          accent: '#3f3f46'
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-[#09090b] text-zinc-100 p-4 md:p-8 font-mono">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- HEADER STATUS BAR -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h1 class="text-xl font-bold tracking-wider uppercase text-zinc-100">Directorio // Clientes</h1>
+        </div>
+        <p class="text-xs text-zinc-500 mt-1">Gestión centralizada de propietarios y contactos</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Input estilo Terminal -->
+        <div class="relative">
+          <input
+            type="text"
+            id="clientSearch"
+            placeholder="[FILTRAR REGISTROS]"
+            class="w-full sm:w-64 bg-zinc-900 border border-zinc-700 focus:border-zinc-100 text-xs text-zinc-200 placeholder-zinc-600 px-3 py-2 rounded outline-none transition"
+          >
+        </div>
+
+        <button
+          onclick="openModal('modalCrear')"
+          class="bg-zinc-100 hover:bg-white text-zinc-950 font-bold text-xs uppercase px-4 py-2 rounded transition flex items-center gap-1.5 active:scale-95"
+        >
+          <span>+</span> Nuevo Registro
+        </button>
+      </div>
+    </header>
+
+    <!-- DASHBOARD WORKSPACE -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+      <!-- COLUMNA IZQUIERDA: MÉTRICAS RÁPIDAS -->
+      <aside class="space-y-4">
+        <div class="bg-[#121215] border border-zinc-800 rounded p-4 space-y-1">
+          <span class="text-[10px] text-zinc-500 uppercase tracking-widest">Total Registrados</span>
+          <p class="text-2xl font-bold text-zinc-100">{{ clientes|length }}</p>
+        </div>
+
+        <div class="bg-[#121215] border border-zinc-800 rounded p-4 space-y-2">
+          <span class="text-[10px] text-zinc-500 uppercase tracking-widest">Estado del Sistema</span>
+          <div class="flex justify-between items-center text-xs text-zinc-400">
+            <span>Base de Datos</span>
+            <span class="text-emerald-400">Online</span>
+          </div>
+          <div class="flex justify-between items-center text-xs text-zinc-400">
+            <span>Módulo</span>
+            <span class="text-zinc-200">Clientes v2.0</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- TABLA DENSE HIGH-CONTRAST -->
+      <section class="lg:col-span-3 bg-[#121215] border border-zinc-800 rounded overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-zinc-800 bg-zinc-900/50 text-zinc-500 uppercase tracking-wider">
+                <th class="p-3 font-semibold">Identificación</th>
+                <th class="p-3 font-semibold">Propietario</th>
+                <th class="p-3 font-semibold">Teléfono</th>
+                <th class="p-3 font-semibold">Correo</th>
+                <th class="p-3 font-semibold text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800/60" id="clientsTable">
+              {% for cliente in clientes %}
+                <tr class="hover:bg-zinc-900/60 transition group client-row">
+                  <td class="p-3 text-zinc-300 font-mono">
+                    <span class="bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded text-[11px]">
+                      {{ cliente.cedula_usuario }}
+                    </span>
+                  </td>
+                  <td class="p-3 font-semibold text-zinc-200 group-hover:text-white">
+                    {{ cliente.nombre }} {{ cliente.apellido }}
+                  </td>
+                  <td class="p-3 text-zinc-400 font-mono">
+                    {{ cliente.telefono }}
+                  </td>
+                  <td class="p-3 text-zinc-400 font-sans truncate max-w-[150px]">
+                    {% if cliente.correo %}{{ cliente.correo }}{% else %}<span class="text-zinc-600 font-mono">N/A</span>{% endif %}
+                  </td>
+                  <td class="p-3 text-right space-x-2">
+                    <button onclick="verCliente('{{ cliente.cedula_usuario }}')" class="text-zinc-400 hover:text-zinc-100 uppercase text-[10px] underline underline-offset-2">Ver</button>
+                    <button onclick="editarCliente('{{ cliente.cedula_usuario }}')" class="text-zinc-400 hover:text-zinc-100 uppercase text-[10px] underline underline-offset-2">Editar</button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="p-8 text-center text-zinc-600 font-mono">
+                    [ NO HAY REGISTROS EN DATABASE ]
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ==========================================
+     MODALES HIGH-CONTRAST / DARK SURFACE
+     ========================================== -->
+
+<!-- CREAR CLIENTE -->
+<div id="modalCrear" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-[#121215] border border-zinc-700 rounded w-full max-w-md p-6 space-y-4 shadow-2xl font-mono text-xs">
+    <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+      <h3 class="font-bold text-zinc-100 uppercase">/// Registrar Cliente</h3>
+      <button onclick="closeModal('modalCrear')" class="text-zinc-500 hover:text-white">&times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'cliente_crear' %}" class="space-y-3">
+      {% csrf_token %}
+
+      <div class="space-y-1">
+        <label class="text-zinc-400 uppercase text-[10px]">Cédula</label>
+        <div class="flex gap-2">
+          <select name="cod_cedula" class="bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none">
+            <option value="V-">V-</option>
+            <option value="E-">E-</option>
+            <option value="J-">J-</option>
+          </select>
+          <input type="text" name="cedula" required minlength="6" maxlength="8" placeholder="12345678" class="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <div class="space-y-1">
+          <label class="text-zinc-400 uppercase text-[10px]">Nombre</label>
+          <input type="text" name="nombre" required class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+        </div>
+        <div class="space-y-1">
+          <label class="text-zinc-400 uppercase text-[10px]">Apellido</label>
+          <input type="text" name="apellido" required class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-zinc-400 uppercase text-[10px]">Teléfono</label>
+        <div class="flex gap-2">
+          <select name="cod_tel" class="bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none">
+            <option value="0412">0412</option>
+            <option value="0414">0414</option>
+            <option value="0424">0424</option>
+            <option value="0416">0416</option>
+            <option value="0426">0426</option>
+          </select>
+          <input type="text" name="num_tel" required maxlength="7" minlength="7" pattern="[0-9]{7}" placeholder="1234567" class="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-zinc-400 uppercase text-[10px]">Correo</label>
+        <input type="email" name="correo" placeholder="correo@ejemplo.com" class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-zinc-400 uppercase text-[10px]">Dirección</label>
+        <textarea name="direccion" rows="2" class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100 resize-none"></textarea>
+      </div>
+
+      <div class="pt-2 flex justify-end gap-2 border-t border-zinc-800">
+        <button type="button" onclick="closeModal('modalCrear')" class="px-3 py-1.5 text-zinc-400 hover:text-zinc-200">CANCELAR</button>
+        <button type="submit" class="bg-zinc-100 text-zinc-950 font-bold px-4 py-1.5 rounded hover:bg-white">GUARDAR</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EDITAR CLIENTE -->
+<div id="modalEditar" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-[#121215] border border-zinc-700 rounded w-full max-w-md p-6 space-y-4 shadow-2xl font-mono text-xs">
+    <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+      <h3 class="font-bold text-zinc-100 uppercase">/// Modificar Registro</h3>
+      <button onclick="closeModal('modalEditar')" class="text-zinc-500 hover:text-white">&times;</button>
+    </div>
+
+    <form id="formEditar" method="POST" class="space-y-3">
+      {% csrf_token %}
+
+      <div class="space-y-1">
+        <label class="text-zinc-500 uppercase text-[10px]">Cédula (Bloqueada)</label>
+        <div class="flex gap-2">
+          <input type="text" id="edit_cod_cedula_dis" disabled class="w-16 bg-zinc-900/50 border border-zinc-800 text-zinc-500 rounded px-2 py-1.5">
+          <input type="text" id="edit_cedula_dis" disabled class="flex-1 bg-zinc-900/50 border border-zinc-800 text-zinc-500 rounded px-3 py-1.5">
+        </div>
+        <input type="hidden" name="cod_cedula" id="hidden_cod_cedula">
+        <input type="hidden" name="cedula" id="hidden_cedula">
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <div class="space-y-1">
+          <label class="text-zinc-400 uppercase text-[10px]">Nombre</label>
+          <input type="text" name="nombre" id="edit_nombre" required class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+        </div>
+        <div class="space-y-1">
+          <label class="text-zinc-400 uppercase text-[10px]">Apellido</label>
+          <input type="text" name="apellido" id="edit_apellido" required class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-zinc-400 uppercase text-[10px]">Teléfono</label>
+        <div class="flex gap-2">
+          <select name="cod_tel" id="edit_cod_tel" class="bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-zinc-200 outline-none">
+            <option value="0412">0412</option>
+            <option value="0414">0414</option>
+            <option value="0424">0424</option>
+            <option value="0416">0416</option>
+            <option value="0426">0426</option>
+          </select>
+          <input type="text" name="num_tel" id="edit_num_tel" required maxlength="7" minlength="7" class="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-zinc-400 uppercase text-[10px]">Correo</label>
+        <input type="email" name="correo" id="edit_correo" class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100">
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-zinc-400 uppercase text-[10px]">Dirección</label>
+        <textarea name="direccion" id="edit_direccion" rows="2" class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200 outline-none focus:border-zinc-100 resize-none"></textarea>
+      </div>
+
+      <div class="pt-2 flex justify-end gap-2 border-t border-zinc-800">
+        <button type="button" onclick="closeModal('modalEditar')" class="px-3 py-1.5 text-zinc-400 hover:text-zinc-200">CANCELAR</button>
+        <button type="submit" class="bg-zinc-100 text-zinc-950 font-bold px-4 py-1.5 rounded hover:bg-white">ACTUALIZAR</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- VER CLIENTE -->
+<div id="modalVer" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-[#121215] border border-zinc-700 rounded w-full max-w-sm p-6 space-y-4 font-mono text-xs shadow-2xl">
+    <div class="flex justify-between items-start border-b border-zinc-800 pb-3">
+      <div>
+        <span class="text-[10px] text-zinc-500 uppercase">Detalle ID</span>
+        <h3 id="view_cedula" class="text-sm font-bold text-zinc-100">---</h3>
+      </div>
+      <button onclick="closeModal('modalVer')" class="text-zinc-500 hover:text-white">&times;</button>
+    </div>
+
+    <div class="space-y-2">
+      <div>
+        <span class="text-zinc-500 text-[10px] uppercase block">Nombre Completo</span>
+        <p id="view_nombre" class="text-zinc-200 font-semibold text-sm">---</p>
+      </div>
+      <div>
+        <span class="text-zinc-500 text-[10px] uppercase block">Teléfono</span>
+        <p id="view_telefono" class="text-zinc-300">---</p>
+      </div>
+      <div>
+        <span class="text-zinc-500 text-[10px] uppercase block">Correo</span>
+        <p id="view_correo" class="text-zinc-300">---</p>
+      </div>
+      <div>
+        <span class="text-zinc-500 text-[10px] uppercase block">Dirección</span>
+        <p id="view_direccion" class="text-zinc-300">---</p>
+      </div>
+    </div>
+
+    <button onclick="closeModal('modalVer')" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-1.5 rounded uppercase font-bold text-[10px]">Cerrar</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+  {% if abrir_modal_crear %} openModal('modalCrear'); {% endif %}
+
+  async function fetchClienteData(pk) {
+    try {
+      const res = await fetch(`api/${pk}/`);
+      if (!res.ok) throw new Error();
+      return await res.json();
+    } catch {
+      alert("Error al obtener datos");
+    }
+  }
+
+  async function verCliente(pk) {
+    const data = await fetchClienteData(pk);
+    if (!data) return;
+
+    document.getElementById('view_nombre').textContent = `${data.nombre} ${data.apellido}`;
+    document.getElementById('view_cedula').textContent = data.cedula_usuario;
+    document.getElementById('view_telefono').textContent = `${data.cod_tel}-${data.num_tel}`;
+    document.getElementById('view_correo').textContent = data.correo || 'N/A';
+    document.getElementById('view_direccion').textContent = data.direccion || 'Sin registrar';
+
+    openModal('modalVer');
+  }
+
+  async function editarCliente(pk) {
+    const data = await fetchClienteData(pk);
+    if (!data) return;
+
+    document.getElementById('formEditar').action = `admin/clientes/editar/${pk}/`;
+
+    document.getElementById('edit_cod_cedula_dis').value = data.cod_cedula;
+    document.getElementById('edit_cedula_dis').value = data.cedula;
+    document.getElementById('hidden_cod_cedula').value = data.cod_cedula;
+    document.getElementById('hidden_cedula').value = data.cedula;
+
+    document.getElementById('edit_nombre').value = data.nombre;
+    document.getElementById('edit_apellido').value = data.apellido;
+    document.getElementById('edit_cod_tel').value = data.cod_tel;
+    document.getElementById('edit_num_tel').value = data.num_tel;
+    document.getElementById('edit_correo').value = data.correo || '';
+    document.getElementById('edit_direccion').value = data.direccion || '';
+
+    openModal('modalEditar');
+  }
+
+  // Buscador de filas
+  document.getElementById('clientSearch')?.addEventListener('keyup', (e) => {
+    const query = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.client-row');
+    rows.forEach(row => {
+      const isVisible = row.innerText.toLowerCase().includes(query);
+      row.style.display = isVisible ? '' : 'none';
+    });
+  });
+</script>
+<script src="{% static 'js/validaciones.js' %}"></script>
+{% endblock %}

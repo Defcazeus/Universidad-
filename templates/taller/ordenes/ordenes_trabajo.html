@@ -1,0 +1,501 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agenda en Calendario - Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+  .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1600px] mx-auto px-4 py-6 space-y-6 font-sans text-slate-900 bg-slate-100 min-h-screen">
+
+  <!-- COMMAND CENTER HEADER -->
+  <header class="bg-slate-900 text-white rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-4 border-orange-500">
+    <div class="flex items-center gap-4">
+      <div class="p-3 bg-orange-500/20 border border-orange-500/40 rounded-xl text-orange-400">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">Vista Interactiva de Agenda</span>
+        </div>
+        <h1 class="text-2xl font-black uppercase tracking-tight">Calendario de Citas & Recepción</h1>
+      </div>
+    </div>
+
+    <!-- ACCIONES Y CONTROLES DEL ENCABEZADO -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <div class="relative min-w-[260px]">
+        <input
+          type="text"
+          id="calendarSearch"
+          placeholder="Filtrar por placa, cliente o marca..."
+          class="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition"
+          onkeyup="filtrarCitasCalendario(this.value)"
+        >
+        <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+
+      <button
+        type="button"
+        onclick="openModal('modalNuevaCita')"
+        class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition cursor-pointer shrink-0"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+        <span><a href="{% url 'citas_list' %}" class="text-white hover:text-white">Programar Cita</a></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- SECCIÓN PRINCIPAL: CALENDARIO + DETALLE DEL DÍA -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- CONTENEDOR DEL CALENDARIO (8 COLUMNAS EN DESKTOP) -->
+    <main class="lg:col-span-8 bg-white rounded-2xl border-2 border-slate-200 p-5 shadow-sm space-y-4">
+
+      <!-- BARRA NAVEGADORA DE MES/AÑO -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-black uppercase text-slate-900 font-mono tracking-tight" id="lblMesAnio">
+            Cargando Mes...
+          </h2>
+          <button
+            type="button"
+            onclick="irHoy()"
+            class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black uppercase rounded-lg border border-slate-300 transition"
+          >
+            Hoy
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button
+            type="button"
+            onclick="cambiarMes(-1)"
+            class="p-1.5 hover:bg-white text-slate-700 hover:text-slate-900 rounded-lg transition shadow-none hover:shadow-sm"
+            title="Mes Anterior"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button
+            type="button"
+            onclick="cambiarMes(1)"
+            class="p-1.5 hover:bg-white text-slate-700 hover:text-slate-900 rounded-lg transition shadow-none hover:shadow-sm"
+            title="Mes Siguiente"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- DÍAS DE LA SEMANA HADER -->
+      <div class="grid grid-cols-7 gap-1 text-center border-b border-slate-200 pb-2">
+        <div class="text-[11px] font-black uppercase text-slate-400 font-mono">Dom</div>
+        <div class="text-[11px] font-black uppercase text-slate-700 font-mono">Lun</div>
+        <div class="text-[11px] font-black uppercase text-slate-700 font-mono">Mar</div>
+        <div class="text-[11px] font-black uppercase text-slate-700 font-mono">Mié</div>
+        <div class="text-[11px] font-black uppercase text-slate-700 font-mono">Jue</div>
+        <div class="text-[11px] font-black uppercase text-slate-700 font-mono">Vie</div>
+        <div class="text-[11px] font-black uppercase text-slate-400 font-mono">Sáb</div>
+      </div>
+
+      <!-- REJILLA DE DÍAS DEL MES (MATRIZ DINÁMICA) -->
+      <div class="grid grid-cols-7 gap-1.5" id="gridCalendario">
+        <!-- Generado dinámicamente con JavaScript -->
+      </div>
+    </main>
+
+    <!-- PANEL LATERAL: DETALLE DE CITAS DEL DÍA SELECCIONADO (4 COLUMNAS) -->
+    <aside class="lg:col-span-4 bg-white rounded-2xl border-2 border-slate-200 p-5 shadow-sm space-y-4 sticky top-6">
+
+      <!-- CABECERA DEL DÍA -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <span class="text-[10px] font-mono font-bold text-orange-500 uppercase tracking-wider block">Ocupación Diaria</span>
+          <h3 class="text-sm font-black uppercase text-slate-900" id="lblDiaSeleccionado">
+            Selecciona un día
+          </h3>
+        </div>
+        <div class="text-right">
+          <span class="px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-xs font-black rounded-lg block" id="countCitasDia">
+            0 / 8 Horas
+          </span>
+        </div>
+      </div>
+
+      <!-- LEYENDA RÁPIDA -->
+      <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 px-1 bg-slate-50 py-1.5 rounded-lg border border-slate-100">
+        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Ocupado / Cita</span>
+        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-300"></span> Cupo Disponible</span>
+      </div>
+
+      <!-- REJILLA POR HORAS (TIME GRID DE 8 AM A 5 PM) -->
+      <div class="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1 custom-scroll" id="gridHorasDia">
+        <!-- Se genera dinámicamente con JavaScript -->
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- DATASET DE CITAS INYECTADO DESDE DJANGO TEMPLATE -->
+<script>
+  const citasBackend = [
+    {% for cita in citas %}
+      {
+        cod_cita: "{{ cita.cod_cita }}",
+        fecha_full: "{{ cita.fecha_entrada|date:'Y-m-d' }}",
+        hora: "{{ cita.fecha_entrada|date:'H:i' }}",
+        vehiculo: "{% if cita.placa %}{{ cita.placa.marca }} {{ cita.placa.modelo }}{% else %}Sin Vehículo{% endif %}",
+        placa: "{% if cita.placa %}{{ cita.placa.placa }}{% else %}S/P{% endif %}",
+        servicio: "{% if cita.id_tipo_servicio %}{{ cita.id_tipo_servicio.nombre }}{% else %}General{% endif %}",
+        estado: "{{ cita.estado_cita }}"
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+</script>
+
+<script>
+let fechaActual = new Date();
+let diaSeleccionadoStr = new Date().toISOString().split('T')[0];
+
+const mesesNombres = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+
+const bloquesHorarios = [
+  "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM",
+  "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderizarCalendario();
+    seleccionarDia(diaSeleccionadoStr);
+});
+
+function cambiarMes(offset) {
+    fechaActual.setMonth(fechaActual.getMonth() + offset);
+    renderizarCalendario();
+}
+
+function irHoy() {
+    fechaActual = new Date();
+    diaSeleccionadoStr = new Date().toISOString().split('T')[0];
+    renderizarCalendario();
+    seleccionarDia(diaSeleccionadoStr);
+}
+
+function renderizarCalendario() {
+    const year = fechaActual.getFullYear();
+    const month = fechaActual.getMonth();
+
+    document.getElementById('lblMesAnio').textContent = `${mesesNombres[month]} ${year}`;
+
+    const primerDiaMes = new Date(year, month, 1).getDay();
+    const diasEnMes = new Date(year, month + 1, 0).getDate();
+
+    const grid = document.getElementById('gridCalendario');
+    grid.innerHTML = '';
+
+    for (let i = 0; i < primerDiaMes; i++) {
+        const celdaVacia = document.createElement('div');
+        celdaVacia.className = "h-24 bg-slate-50/50 rounded-xl border border-dashed border-slate-200/60 pointer-events-none";
+        grid.appendChild(celdaVacia);
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hoyStr = hoy.toISOString().split('T')[0];
+
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+        const mesPad = String(month + 1).padStart(2, '0');
+        const diaPad = String(dia).padStart(2, '0');
+        const fechaStr = `${year}-${mesPad}-${diaPad}`;
+
+        const fechaCelda = new Date(year, month, dia);
+        fechaCelda.setHours(0, 0, 0, 0);
+
+        const esPasado = fechaCelda < hoy;
+        const esHoy = fechaStr === hoyStr;
+        const esSeleccionado = fechaStr === diaSeleccionadoStr;
+
+        const citasDelDia = citasBackend.filter(c => c.fecha_full === fechaStr);
+
+        const celda = document.createElement('div');
+
+        celda.className = `h-24 p-1.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between group ${
+            esSeleccionado
+            ? 'border-orange-500 bg-orange-50/30 shadow-md ring-2 ring-orange-500/20'
+            : esHoy
+            ? 'border-slate-900 bg-slate-900 text-white'
+            : esPasado
+            ? 'border-slate-200 bg-slate-50/80 hover:border-orange-300'
+            : 'border-slate-200 bg-white hover:border-orange-300 hover:shadow-sm'
+        }`;
+
+        celda.onclick = () => seleccionarDia(fechaStr);
+
+        let htmlCelda = `
+            <div class="flex justify-between items-center">
+                <span class="font-mono text-xs font-black ${esHoy ? 'text-orange-400' : 'text-slate-800'}">
+                    ${dia}
+                </span>
+                ${citasDelDia.length > 0 ? `
+                    <span class="px-1.5 py-0.5 ${esHoy ? 'bg-orange-500 text-white' : 'bg-slate-900 text-orange-400'} font-mono text-[9px] font-extrabold rounded-md">
+                        ${citasDelDia.length}
+                    </span>
+                ` : ''}
+            </div>
+        `;
+
+        htmlCelda += `<div class="space-y-1 overflow-hidden my-1 flex-1">`;
+        citasDelDia.slice(0, 2).forEach(c => {
+            let colorClase = 'bg-amber-100 text-amber-900'; // Pendiente (Amarillo)
+            if (c.estado === 'En Reparacion' || c.estado === 'En Proceso') {
+                colorClase = 'bg-blue-100 text-blue-800'; // En Reparación (Azul)
+            } else if (c.estado === 'Finalizado' || c.estado === 'Ejecutada' || c.estado === 'Atendida') {
+                colorClase = 'bg-emerald-100 text-emerald-800'; // Finalizado (Verde)
+            }
+
+            htmlCelda += `
+                <div class="px-1.5 py-0.5 rounded text-[9px] font-bold truncate flex items-center justify-between ${colorClase}">
+                    <span class="truncate">${c.placa}</span>
+                    <span class="font-mono text-[8px] opacity-75">${c.hora}</span>
+                </div>
+            `;
+        });
+
+        if (citasDelDia.length > 2) {
+            htmlCelda += `<div class="text-[8px] font-bold text-slate-400 text-center">+${citasDelDia.length - 2} más</div>`;
+        }
+
+        htmlCelda += `</div>`;
+        celda.innerHTML = htmlCelda;
+        grid.appendChild(celda);
+    }
+}
+
+function seleccionarDia(fechaStr) {
+    diaSeleccionadoStr = fechaStr;
+    renderizarCalendario();
+
+    const [y, m, d] = fechaStr.split('-');
+    document.getElementById('lblDiaSeleccionado').textContent = `${d} DE ${mesesNombres[parseInt(m)-1].toUpperCase()} ${y}`;
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fechaSeleccionada = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    fechaSeleccionada.setHours(0, 0, 0, 0);
+
+    const esDiaPasado = fechaSeleccionada < hoy;
+    const citasDia = citasBackend.filter(c => c.fecha_full === fechaStr);
+
+    document.getElementById('countCitasDia').textContent = `${citasDia.length} / ${bloquesHorarios.length} Horas`;
+
+    const contenedor = document.getElementById('gridHorasDia');
+    contenedor.innerHTML = '';
+
+    bloquesHorarios.forEach(horaBloque => {
+        const citaOcupada = citasDia.find(c => parsearHoraA12H(c.hora) === horaBloque);
+        const slot = document.createElement('div');
+
+        if (citaOcupada) {
+            let botonAccionHTML = '';
+            let estadoBadgeColor = 'text-amber-400';
+            let estadoTextoColor = 'text-amber-300';
+
+            if (citaOcupada.estado === 'Pendiente') {
+                botonAccionHTML = `
+                    <button
+                        type="button"
+                        onclick="avanzarEstadoCita('${citaOcupada.cod_cita}', 'En Reparacion')"
+                        class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm"
+                    >
+                        ⚡ Check-In
+                    </button>`;
+                estadoBadgeColor = 'text-amber-400';
+                estadoTextoColor = 'text-amber-300';
+            } else if (citaOcupada.estado === 'En Reparacion') {
+                botonAccionHTML = `
+                    <button
+                        type="button"
+                        onclick="avanzarEstadoCita('${citaOcupada.cod_cita}', 'Finalizado')"
+                        class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-sm"
+                    >
+                        🔧 Finalizar
+                    </button>`;
+                estadoBadgeColor = 'text-blue-400';
+                estadoTextoColor = 'text-blue-300';
+            } else {
+                botonAccionHTML = `
+                    <span class="text-[10px] font-black text-emerald-400 uppercase flex items-center gap-1">
+                        ✓ Finalizado
+                    </span>`;
+                estadoBadgeColor = 'text-emerald-400';
+                estadoTextoColor = 'text-emerald-300';
+            }
+
+            slot.className = "p-3.5 bg-slate-900 text-white rounded-2xl border-l-4 border-l-orange-500 shadow-md space-y-2.5 transition-all hover:scale-[1.01]";
+            slot.innerHTML = `
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                        <span class="font-mono text-xs font-black text-orange-400">⏰ ${horaBloque}</span>
+                    </div>
+                    <span class="text-[9px] font-mono font-bold px-2 py-0.5 bg-slate-800 ${estadoBadgeColor} rounded-md border border-slate-700 uppercase">
+                        CITA #${citaOcupada.cod_cita.substring(0, 8)}
+                    </span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                        <h4 class="text-xs font-black uppercase text-white tracking-wide truncate max-w-[180px]">
+                            ${citaOcupada.vehiculo}
+                        </h4>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">
+                            ${citaOcupada.servicio}
+                        </p>
+                    </div>
+                    <span class="px-2.5 py-1 bg-slate-800 ${estadoTextoColor} font-mono text-[10px] font-black rounded-lg border border-slate-700 shrink-0">
+                        ${citaOcupada.placa}
+                    </span>
+                </div>
+                <div class="pt-1.5 border-t border-slate-800/80 flex items-center justify-between">
+                    <span class="text-[9px] font-mono font-bold text-slate-400 uppercase">
+                        Estado: <strong class="text-white">${citaOcupada.estado}</strong>
+                    </span>
+                    ${botonAccionHTML}
+                </div>
+            `;
+        } else {
+            if (esDiaPasado) {
+                slot.className = "p-2.5 bg-slate-100/70 rounded-xl border border-slate-200 flex items-center justify-between opacity-60";
+                slot.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold text-slate-400">⏰ ${horaBloque}</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Espacio No Reservado</span>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Expirado</span>
+                `;
+            } else {
+                slot.className = "p-2.5 bg-slate-50 hover:bg-orange-50/50 rounded-xl border-2 border-dashed border-slate-200 hover:border-orange-400 transition-all flex items-center justify-between group";
+                slot.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold text-slate-500 group-hover:text-orange-600 transition-colors">⏰ ${horaBloque}</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Espacio Libre</span>
+                    </div>
+                    <button
+                        type="button"
+                        onclick="agendarEnHoraExacta('${fechaStr}', '${horaBloque}')"
+                        class="px-2.5 py-1 bg-white group-hover:bg-orange-500 text-slate-700 group-hover:text-white border border-slate-200 group-hover:border-orange-500 text-[10px] font-black uppercase rounded-lg transition shadow-none group-hover:shadow-md cursor-pointer"
+                    >
+                        + Reservar
+                    </button>
+                `;
+            }
+        }
+
+        contenedor.appendChild(slot);
+    });
+}
+
+function parsearHoraA12H(horaRaw) {
+    if (!horaRaw) return '';
+    if (horaRaw.includes('T')) {
+        horaRaw = horaRaw.split('T')[1];
+    }
+    let [h] = horaRaw.split(':');
+    let horas = parseInt(h, 10);
+    let ampm = horas >= 12 ? 'PM' : 'AM';
+    horas = horas % 12;
+    horas = horas ? horas : 12;
+    let horasStr = String(horas).padStart(2, '0');
+    return `${horasStr}:00 ${ampm}`;
+}
+
+function agendarEnHoraExacta(fecha, hora) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const [y, m, d] = fecha.split('-');
+    const fechaSeleccionada = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+
+    if (fechaSeleccionada < hoy) {
+        Swal.fire('Acción no permitida', 'No es posible agendar citas en fechas pasadas.', 'warning');
+        return;
+    }
+
+    const modal = document.getElementById('modalNuevaCita');
+    if (modal) {
+        const inputFecha = modal.querySelector('input[type="datetime-local"], input[name="fecha_entrada"]');
+        if (inputFecha) {
+            const horaMilitar = convertirHoraMilitar(hora);
+            inputFecha.value = `${fecha}T${horaMilitar}`;
+        }
+        openModal('modalNuevaCita');
+    }
+}
+
+function convertirHoraMilitar(hora12) {
+    let [time, modifier] = hora12.split(' ');
+    let [hours, minutes] = time.split(':');
+    if (hours === '12') hours = '00';
+    if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+}
+
+function filtrarCitasCalendario(query) {
+    const q = query.toLowerCase();
+    if (!q) {
+        renderizarCalendario();
+        return;
+    }
+    const celdas = document.querySelectorAll('#gridCalendario > div');
+    celdas.forEach(c => {
+        if (c.textContent.toLowerCase().includes(q)) {
+            c.classList.add('ring-2', 'ring-orange-500');
+        } else {
+            c.classList.remove('ring-2', 'ring-orange-500');
+        }
+    });
+}
+
+function avanzarEstadoCita(codCita, nuevoEstado) {
+    let urlDinamica = `/admin/citas/cambiar-estado/${codCita}/`;
+
+    fetch(urlDinamica, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `estado=${encodeURIComponent(nuevoEstado)}`
+    })
+    .then(response => response.json())
+    .then(res => {
+        if (res.status === 'success') {
+            const citaLocal = citasBackend.find(c => c.cod_cita === codCita);
+            if (citaLocal) {
+                citaLocal.estado = res.nuevo_estado;
+            }
+            renderizarCalendario();
+            seleccionarDia(diaSeleccionadoStr);
+        } else {
+            Swal.fire('Error', res.mensaje || 'No se pudo actualizar el estado.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Ocurrió un error de conexión con el servidor.', 'error');
+    });
+}
+</script>
+{% endblock %}

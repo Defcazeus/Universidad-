@@ -1,0 +1,931 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es"></html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %}</title>
+
+  <link href="{% static 'vendor/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/font/bootstrap-icons.css' %}" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{% static 'vendor/js/sweetalert2.all.min.js' %}"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" href="{% static 'img/logo del taller.jpg' %}" type="image/x-icon">
+
+  {% block extra_css %}{% endblock %}
+  {% block page_header %}{% endblock %}
+
+  <style>
+    /* VARIABLES ESTRUCTURALES DEL SIDEBAR MAESTRO */
+    :root {
+        --sidebar-ancho: 280px;
+        --sidebar-colapsado: 70px;
+        --transicion: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* CONTENEDOR FLEXIBLE DE ADMINISTRACIÓN */
+    .sicoven-admin-layout {
+        display: flex;
+        width: 100vw;
+        min-height: 100vh;
+        position: relative;
+    }
+
+    /* ESTILOS DEL SIDEBAR REAL */
+    .taller-sidebar-maestro {
+        width: var(--sidebar-ancho);
+        background: var(--oscuro, #1e1e24);
+        color: #ffffff;
+        transition: var(--transicion);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        z-index: 1010;
+        flex-shrink: 0;
+    }
+
+    .sidebar-header-custom {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-header-custom h2 {
+        font-size: 1.1rem;
+        font-weight: 800;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: var(--transicion);
+    }
+
+    .sidebar-controls {
+        display: flex;
+        gap: 5px;
+    }
+    .btn-sidebar-ctrl {
+        background: rgba(255,255,255,0.05);
+        border: none;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: var(--transicion);
+        font-size: 0.85rem;
+    }
+    .btn-sidebar-ctrl:hover {
+        background: var(--naranja, #ff6600);
+        color: #fff;
+    }
+    .btn-close-sidebar-total:hover {
+        background: #dc3545;
+    }
+
+    .taller-nav-links {
+        padding: 15px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    .sidebar-section-tag {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 12px 20px 6px 20px;
+        color: rgba(255,255,255,0.4);
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        transition: var(--transicion);
+    }
+    .taller-link {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: var(--oscuro);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+        transition: var(--transicion);
+        border-left: 4px solid transparent;
+        white-space: nowrap;
+    }
+    .taller-link i {
+        font-size: 1.1rem;
+        width: 25px;
+        margin-right: 12px;
+        text-align: center;
+        transition: var(--transicion);
+    }
+    .taller-link:hover {
+        color: #ffffff;
+        background: rgba(255,255,255,0.04);
+        border-left-color: rgba(255,255,255,0.3);
+    }
+    .taller-link.active-module {
+        color: #ffffff;
+        background: rgba(255,255,255,0.08);
+        border-left-color: var(--naranja, #ff6600);
+    }
+    .taller-link.active-module i {
+        color: var(--naranja, #ff6600);
+    }
+
+    /* ESTADOS DE ANIMACIÓN (JS) */
+    .taller-sidebar-maestro.collapsed {
+        width: var(--sidebar-colapsado);
+    }
+    .taller-sidebar-maestro.collapsed .sidebar-header-custom h2,
+    .taller-sidebar-maestro.collapsed .sidebar-section-tag,
+    .taller-sidebar-maestro.collapsed .taller-link span {
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        padding: 0;
+        margin: 0;
+    }
+    .taller-sidebar-maestro.collapsed .taller-link {
+        padding: 15px 0;
+        justify-content: center;
+        border-left-width: 0px;
+    }
+    .taller-sidebar-maestro.collapsed .taller-link i {
+        margin-right: 0;
+        font-size: 1.2rem;
+    }
+    .taller-sidebar-maestro.collapsed .sidebar-header-custom {
+        justify-content: center;
+        padding: 15px 0;
+    }
+    .taller-sidebar-maestro.collapsed .sidebar-controls {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* CIERRE TOTAL ABSORBENTE */
+    .taller-sidebar-maestro.closed-total {
+        margin-left: calc(-1 * var(--sidebar-ancho));
+        box-shadow: none;
+    }
+    .taller-sidebar-maestro.collapsed.closed-total {
+        margin-left: calc(-1 * var(--sidebar-colapsado));
+    }
+
+    /* BOTÓN FLOTANTE REAPERTURA */
+    .btn-rescue-sidebar {
+        position: fixed;
+        bottom: 25px;
+        left: 25px;
+        background: var(--oscuro, #1e1e24);
+        color: #fff;
+        border: 2px solid var(--naranja, #ff6600);
+        border-radius: 50px;
+        padding: 10px 16px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        cursor: pointer;
+        z-index: 2000;
+        display: none;
+        transition: var(--transicion);
+    }
+    .btn-rescue-sidebar:hover {
+        background: var(--naranja, #ff6600);
+        transform: scale(1.05);
+    }
+
+    /* ENVOLVENTE DEL CONTENIDO DINÁMICO */
+    .sicoven-content-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+  </style>
+</head>
+
+<body id="mainBody">
+
+{% block header %}
+
+
+
+<nav>
+    <div class="nav-container">
+      <ul class="nav-logo">
+          {% load starts_with %}
+          {% if user.is_authenticated and user.id_rol.es_admin and request.path == "/admin" or user.is_authenticated and user.id_rol.es_admin and request.path|starts_with:"/admin/" %}
+
+        <li>
+            <div class="sidebar-controls">
+            <button class="btn-sidebar-ctrl" id="btnCollapseSidebar" title="Compactar menú"><i class="bi bi-list"></i></button>
+            <button class="btn-sidebar-ctrl btn-close-sidebar-total" id="btnCloseSidebarTotal" title="Cerrar panel completo"><i class="bi bi-xlg"></i>X</button>
+            <button id="rescueSidebarBtn" class="btn-rescue-sidebar">
+                <i class="bi bi-layout-sidebar-inset"></i> Mostrar Módulos
+            </button>
+        </div>
+        </li>
+        {% endif %}
+
+        <li>
+          <a href="{% url 'home' %}" style="display: flex; align-items: center; text-transform: none; padding: 0;">
+            <img src="{% static 'img/logo del taller.jpg' %}" alt="Logo">
+            <span style="margin-left: 10px; font-weight: 800; color: var(--blanco); letter-spacing: 1px;">FERNÁNDEZ</span>
+          </a>
+        </li>
+      </ul>
+
+      {% if request.resolver_match.url_name == 'home' %}
+      <ul class="nav-links">
+        <li><a href="#sobre-nosotros">SOBRE NOSOTROS</a></li>
+        <li><a href="#servicios">SERVICIOS</a></li>
+        <li><a href="#galeria">GALERÍA</a></li>
+        <li><a href="#contacto">CONTACTO</a></li>
+      </ul>
+      {% endif %}
+
+      <ul class="nav-auth" style="display: flex; align-items: center; gap: 15px;">
+
+        <li class="d-flex align-items-center">
+          <button type="button"
+                  id="btnModalTasaDolar"
+                  class="btn btn-sm px-2.5 py-1 rounded-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm border"
+                  style="background-color: rgba(28, 200, 138, 0.12); color: #15803d; border-color: rgba(28, 200, 138, 0.4) !important; font-size: 0.85rem; transition: all 0.2s ease;"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalConfiguracionTasa"
+                  title="Tasa Oficial BCV. Clic para configurar o actualizar">
+            <i class="bi bi-currency-exchange text-success"></i>
+            <span>$:</span>
+            <span id="navTasaDolarValor" class="font-monospace fw-bold">{{ tasa_dolar|floatformat:2|default:"45.20" }}</span>
+            <span>Bs.</span>
+            <i class="bi bi-arrow-repeat text-muted ms-1" style="font-size: 0.75rem;"></i>
+          </button>
+        </li>
+
+        {% if user.is_authenticated %}
+            <!-- Botón Desplegable de Notificaciones -->
+            <div class="dropdown position-relative me-3" id="dropdown-notificaciones-container">
+                <button class="btn btn-notif-toggle position-relative rounded-circle p-2"
+                        type="button"
+                        id="dropdownNotificaciones"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Notificaciones">
+                    <i class="fas fa-bell fa-lg"></i>
+
+                    <!-- Badge con contador -->
+                    {% if notificaciones_no_leidas_count > 0 %}
+                        <span id="badge-notificaciones" class="position-absolute top-0 start-100 translate-middle badge rounded-pill notif-badge">
+                            {{ notificaciones_no_leidas_count }}
+                        </span>
+                    {% else %}
+                        <span id="badge-notificaciones" class="position-absolute top-0 start-100 translate-middle badge rounded-pill notif-badge d-none">
+                            0
+                        </span>
+                    {% endif %}
+                </button>
+
+                <!-- Menú Desplegable -->
+                <div class="dropdown-menu dropdown-menu-end notif-dropdown-menu shadow-lg p-0" aria-labelledby="dropdownNotificaciones">
+                    <div class="p-3 notif-header d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 fw-bold notif-title">
+                            <i class="fas fa-bell me-2 text-naranja"></i>Notificaciones
+                        </h6>
+                        <button class="btn btn-sm btn-link text-decoration-none p-0 btn-mark-read" id="btn-marcar-todas-leidas">
+                            Marcar todas leídas
+                        </button>
+                    </div>
+
+                    <!-- Lista de Notificaciones -->
+                    <div id="lista-notificaciones" class="list-group list-group-flush notif-list-container">
+                        <div class="text-center p-4 notif-loading">
+                            <i class="fas fa-spinner fa-spin me-2 text-naranja"></i>Cargando notificaciones...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <!-- Script JS para manejar AJAX -->
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const dropdownBtn = document.getElementById("dropdownNotificaciones");
+            const listaNotificaciones = document.getElementById("lista-notificaciones");
+            const badge = document.getElementById("badge-notificaciones");
+            const btnMarcarTodas = document.getElementById("btn-marcar-todas-leidas");
+
+            // Función para obtener la cookie CSRF de Django
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            const csrftoken = getCookie('csrftoken');
+
+            // 1. FUNCIÓN PARA CARGAR Y RENDERIZAR NOTIFICACIONES
+            function cargarNotificaciones() {
+                fetch("/api/notificaciones/") // Ajusta la URL a la ruta de tu API de notificaciones
+                    .then(response => {
+                        if (!response.ok) throw new Error("No autenticado o error en servidor");
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Actualizar el número del badge
+                            const sinLeer = data.notificaciones.filter(n => !n.leido).length;
+
+                            if (badge) {
+                                if (sinLeer > 0) {
+                                    badge.innerText = sinLeer;
+                                    badge.classList.remove('d-none');
+                                } else {
+                                    badge.classList.add('d-none');
+                                    badge.innerText = '0';
+                                }
+                            }
+
+                            // Renderizar la lista dentro del desplegable
+                            renderListaNotificaciones(data.notificaciones);
+                        }
+                    })
+                    .catch(err => {
+                        // Silencioso para evitar saturar la consola si el usuario no tiene sesión iniciada
+                    });
+            }
+
+            // 2. CONSTRUIR LOS ELEMENTOS EN EL HTML
+            function renderListaNotificaciones(notificaciones) {
+                if (!listaNotificaciones) return;
+
+                if (notificaciones.length === 0) {
+                    listaNotificaciones.innerHTML = `<div class="p-3 text-center text-muted">No tienes notificaciones.</div>`;
+                    return;
+                }
+
+                listaNotificaciones.innerHTML = "";
+                notificaciones.forEach(notif => {
+                    const item = document.createElement("a");
+                    item.href = "#";
+                    // Si no está leída, le agregamos un fondo destacado
+                    item.className = `list-group-item list-group-item-action p-3 ${notif.leido ? 'bg-white' : 'bg-light fw-bold'}`;
+
+                    item.innerHTML = `
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                            <small class="text-primary">${notif.titulo}</small>
+                            <small class="text-muted" style="font-size: 0.75rem;">${notif.fecha}</small>
+                        </div>
+                        <p class="mb-1 text-dark" style="font-size: 0.85rem; font-weight: normal;">${notif.mensaje}</p>
+                    `;
+
+                    // Al hacer clic en la notificación individual, se marca como leída
+                    item.addEventListener("click", function (e) {
+                        e.preventDefault();
+                        marcarComoLeida(notif.id, item);
+                    });
+
+                    listaNotificaciones.appendChild(item);
+                });
+            }
+
+            // 3. MARCAR COMO LEÍDA VÍA API
+            function marcarComoLeida(id, elementoHtml) {
+                fetch(`/api/notificaciones/marcar-leida/${id}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        if (elementoHtml) {
+                            elementoHtml.classList.remove('bg-light', 'fw-bold');
+                            elementoHtml.classList.add('bg-white');
+                        }
+                        cargarNotificaciones(); // Recarga el estado para actualizar el contador
+                    }
+                });
+            }
+
+            // 4. EVENTO PARA MARCAR TODAS COMO LEÍDAS
+            if (btnMarcarTodas) {
+                btnMarcarTodas.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    marcarComoLeida(0, null); // 0 indica marcar todas las del usuario
+                });
+            }
+
+            // 5. CÁLCULO DE TIEMPO Y SONDEO AUTOMÁTICO (POLLING)
+            // Carga inicial al entrar a la página
+            cargarNotificaciones();
+
+            // Reconsulta automáticamente cada 8 segundos sin recargar la pestaña
+            setInterval(cargarNotificaciones, 8000);
+        });
+        </script>
+        {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
+          <li class="profile-dropdown-container">
+            <button id="profileDropdownBtn" class="btn-login" aria-haspopup="true" aria-expanded="false" style="color: var(--blanco);">
+              <i class="bi bi-person-circle"></i> {{ user.first_name|default:"Perfil" }}
+              <i class="bi bi-chevron-down arrow-icon"></i>
+            </button>
+
+            <div id="profileDropdownMenu" class="profile-dropdown-menu">
+              <div class="dropdown-header">
+                <span class="user-name">{{ user.get_full_name|default:user }}</span>
+                <span class="user-role">
+                  {{ user.is_staff|yesno:"Administrador,Usuario" }}
+                </span>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              {% if user.is_staff %}
+                <a href="{% url 'home_admin' %}" class="dropdown-item">
+                  <i class="bi bi-layout-text-window-reverse"></i> Panel Admin
+                </a>
+              {% else %}
+                <a href="{% url 'home_user' %}" class="dropdown-item">
+                  <i class="bi bi-speedometer2"></i> Mi Panel
+                </a>
+              {% endif %}
+
+              <a href="#" class="dropdown-item">
+                <i class="bi bi-person-gear"></i> Configuración
+              </a>
+              <a href="#" class="dropdown-item">
+                <i class="bi bi-question-circle"></i> Ayuda y Soporte
+              </a>
+
+              <div class="dropdown-divider"></div>
+
+              <form action="{% url 'logout' %}" method="post" id="logoutForm" style="margin: 0; padding: 0;">
+                {% csrf_token %}
+                <button type="submit" id="logoutBtn" class="dropdown-item text-danger">
+                  <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </button>
+              </form>
+            </div>
+          </li>
+        {% else %}
+          <li>
+            <a href="{% url 'login' %}" class="btn-login">Ingresar</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+{% endblock header %}
+
+
+
+
+
+
+
+{% if request.resolver_match.url_name == 'home' %}
+  <div class="social-floating">
+    <a href="https://wa.me/584245787208" class="social-icon whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Contacto de WhatsApp">
+      <i class="bi bi-whatsapp"></i>
+    </a>
+    <a href="https://instagram.com" class="social-icon instagram" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Instagram">
+      <i class="bi bi-instagram"></i>
+    </a>
+    <a href="https://tiktok.com" class="social-icon tiktok" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en TikTok">
+      <i class="bi bi-tiktok"></i>
+    </a>
+  </div>
+{% endif %}
+
+
+
+
+
+
+{% if user.is_authenticated and request.resolver_match.url_name != 'home' and not request.path|slice:":7" == '/store/' %}
+<div class="sicoven-admin-layout">
+
+      <button id="rescueSidebarBtn" class="btn-rescue-sidebar">
+          <i class="bi bi-layout-sidebar-inset"></i> Mostrar Módulos
+      </button>
+
+      <aside class="taller-sidebar-maestro" id="masterAdminSidebar">
+          <div class="sidebar-header-custom">
+              <h2><i class="bi bi-sliders me-1 text-warning"></i> SICOVEN</h2>
+              <div class="sidebar-controls">
+                  <button class="btn-sidebar-ctrl" id="btnCollapseSidebar" title="Compactar menú"><i class="bi bi-list"></i></button>
+                  <button class="btn-sidebar-ctrl btn-close-sidebar-total" id="btnCloseSidebarTotal" title="Cerrar panel completo"><i class="bi bi-xlg"></i></button>
+              </div>
+          </div>
+          {% if user.is_authenticated and user.is_staff %}
+          <nav class="taller-nav-links">
+              <div class="sidebar-section-tag">Gestión de Registro</div>
+              <a href="{% url 'clientes_list' %}" class="taller-link"><i class="bi bi-people-fill"></i><span>Clientes (Usuarios)</span></a>
+              <a href="{% url 'vehiculos_list' %}" class="taller-link"><i class="bi bi-car-front-fill"></i><span>Vehículos</span></a>
+              <a href="{% url 'servicio_list' %}" class="taller-link"><i class="bi bi-wrench-adjustable"></i><span>Catálogo de Servicios</span></a>
+              <a href="{% url 'inventario_list' %}" class="taller-link"><i class="bi bi-boxes"></i><span>Inventario (Productos)</span></a>
+
+              <div class="sidebar-section-tag">Gestión de Ventas</div>
+              <a href="{% url 'citas_list' %}" class="taller-link"><i class="bi bi-calendar-check-fill"></i><span>Citas</span></a>
+              <a href="{% url 'ordenes_trabajo_list' %}" class="taller-link"><i class="bi bi-file-earmark-spreadsheet-fill"></i><span>Órdenes de Trabajo</span></a>
+              <a href="{% url 'pedido_list' %}" class="taller-link"><i class="bi bi-credit-card"></i><span>Pedidos</span></a>
+              <div class="sidebar-section-tag">Pagos</div>
+
+              <a href="{% url 'factura_list' %}" class="taller-link"><i class="bi bi-images"></i><span>Facturas</span></a>
+              <a href="{% url 'transaccion_list' %}" class="taller-link"><i class="bi bi-newspaper"></i><span>Transacciones</span></a>
+
+
+              <div class="sidebar-section-tag">Portal Web</div>
+              <a href="{% url 'portal_web' %}" class="taller-link"><i class="bi bi-sliders2-vertical"></i><span>Configuración General</span></a>
+              <a href="{% url 'galeria_dinamica' %}" class="taller-link"><i class="bi bi-images"></i><span>Galería y Banner</span></a>
+              <a href="{% url 'noticias_promociones' %}" class="taller-link"><i class="bi bi-newspaper"></i><span>Noticias y Contenido</span></a>
+
+              <div class="sidebar-section-tag">Otros</div>
+
+
+              <a href="#" class="taller-link"><i class="bi bi-person-gear-fill"></i><span>Mis Datos</span></a>
+          </nav>
+          {% endif %}
+
+          {% if user.is_authenticated and not user.is_staff %}
+
+          <nav class="taller-nav-links">
+              <div class="sidebar-section-tag">Gestión del Cliente</div>
+              <a href="{% url 'vehiculos_user' %}" class="taller-link"><i class="fas fa-car"></i><span>Mis Vehículos</span></a>
+              <a href="{% url 'agenda_citas_list' %}" class="taller-link"><i class="fas fa-receipt"></i><span>Mis Citas</span></a>
+              <a href="{% url 'pedido_clientes'%}" class="taller-link"><i class="fas fa-receipt"></i><span>Mis Pedidos</span></a>
+
+              <a href="#" class="taller-link"><i class="fas fa-receipt"></i><span>Mis Facturas</span></a>
+              <a href="#" class="taller-link"><i class="fas fa-user-gear"></i><span>Mis Datos</span></a>
+          </nav>
+          {% endif %}
+
+      </aside>
+
+      <div class="sicoven-content-wrapper">
+    {% endif %}
+          <main class="container-fluid content-wrapper {% if user.id_rol.es_admin %}pt-3{% endif %}">
+              {% block content %}{% endblock content %}
+          </main>
+
+    {% if user.is_authenticated and user.id_rol.es_admin %}
+      </div> </div> {% endif %}
+
+
+
+  <div class="modal fade" id="modalGenerico" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-body" id="modalGenericoBody">Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Configuración Tasa Oficial BCV -->
+  <div class="modal fade" id="modalConfiguracionTasa" tabindex="-1" aria-labelledby="modalConfiguracionTasaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="border-radius: 18px;">
+        <div class="modal-header text-white px-4 py-3" style="background-color: var(--oscuro, #1e293b);">
+          <div class="d-flex align-items-center gap-2">
+            <div class="p-2 rounded-3" style="background-color: rgba(28, 200, 138, 0.2);">
+              <i class="bi bi-currency-exchange text-success fs-5"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0 text-white" id="modalConfiguracionTasaLabel">Tasa Oficial del Dólar (BCV)</h5>
+              <small class="text-white-50" style="font-size: 0.75rem;">Configuración del Sistema</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body p-4 text-center">
+          <!-- Tarjeta con valor actual -->
+          <div class="p-4 mb-3 rounded-4 shadow-sm" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9); border: 1px solid #e2e8f0;">
+            <span class="text-uppercase fw-bold text-muted small d-block mb-1 tracking-wider" style="letter-spacing: 0.05em;">Tasa Oficial Vigente</span>
+            <div class="d-flex align-items-baseline justify-content-center gap-1 my-1">
+              <span class="fs-4 text-secondary fw-semibold">Bs.</span>
+              <span id="modalTasaValor" class="display-5 fw-bold text-dark font-monospace">{{ tasa_dolar|floatformat:4|default:"45.2000" }}</span>
+              <span class="text-muted fw-bold small">/ USD</span>
+            </div>
+            <small class="text-muted d-block mt-1">Valor base referencial utilizado automáticamente en cotizaciones, pedidos y compras.</small>
+          </div>
+
+          <!-- Última actualización -->
+          <div class="d-flex align-items-center justify-content-center gap-2 text-muted small mb-4 py-1.5 px-3 bg-light rounded-pill border mx-auto" style="width: fit-content;">
+            <i class="bi bi-clock-history text-secondary"></i>
+            <span>Última actualización:</span>
+            <strong id="modalTasaUltimaActualizacion" class="text-dark">
+              {% if tasa_dolar_ultima_actualizacion %}
+                {{ tasa_dolar_ultima_actualizacion|date:"d/m/Y h:i A" }}
+              {% elif configuracion_sistema and configuracion_sistema.ultima_actualizacion %}
+                {{ configuracion_sistema.ultima_actualizacion|date:"d/m/Y h:i A" }}
+              {% else %}
+                Recién sincronizado
+              {% endif %}
+            </strong>
+          </div>
+
+          <!-- Botón de actualización -->
+          {% if user.is_authenticated and user.id_rol.es_admin %}
+          <div class="d-grid gap-2">
+            <button type="button"
+                    id="btnSincronizarBCV"
+                    class="btn text-white fw-bold py-2.5 px-4 rounded-xl shadow-sm d-flex align-items-center justify-content-center gap-2"
+                    style="background-color: var(--naranja, #f97316); border: none; font-size: 0.95rem;">
+              <i class="bi bi-arrow-repeat fs-5" id="iconoSyncBCV"></i>
+              <span id="textoSyncBCV">Actualizar Tasa desde BCV</span>
+            </button>
+          </div>
+          {% endif %}
+          <!-- Mensaje / Alerta de respuesta AJAX -->
+          <div id="alertaSincronizacionBCV" class="alert d-none mt-3 mb-0 py-2.5 px-3 small rounded-3" role="alert"></div>
+        </div>
+
+        <div class="modal-footer bg-light border-0 py-2.5 px-4 d-flex justify-content-between align-items-center">
+          <small class="text-muted" style="font-size: 0.75rem;">
+            <i class="bi bi-shield-check me-1 text-success"></i>Fuente: Banco Central de Venezuela (bcv.org.ve)
+          </small>
+          <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin-anim {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .anim-spin {
+      display: inline-block;
+      animation: spin-anim 1s linear infinite;
+    }
+  </style>
+
+  <script>
+  // ==========================================================================
+  // GESTIÓN DEL BUZÓN DE NOTIFICACIONES (Solo No Leídas + Redirección)
+  // ==========================================================================
+  document.addEventListener("DOMContentLoaded", function () {
+      const dropdownNotificacionesBtn = document.getElementById("dropdownNotificaciones");
+      const listaNotificaciones = document.getElementById("lista-notificaciones");
+      const badgeNotificaciones = document.getElementById("badge-notificaciones");
+      const btnMarcarTodas = document.getElementById("btn-marcar-todas-leidas");
+  
+      // Función auxiliar para obtener el token CSRF de las cookies
+      function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+  
+      // 1. Consultar notificaciones periódicamente (Polling cada 10 segundos)
+      function cargarNotificaciones() {
+          fetch("/api/notificaciones/")
+              .then(response => {
+                  if (!response.ok) throw new Error("No autenticado");
+                  return response.json();
+              })
+              .then(data => {
+                  if (data.status === 'success') {
+                      // Actualizar el número del badge en la campana
+                      if (badgeNotificaciones) {
+                          if (data.total_no_leidas > 0) {
+                              badgeNotificaciones.innerText = data.total_no_leidas;
+                              badgeNotificaciones.classList.remove('d-none');
+                          } else {
+                              badgeNotificaciones.classList.add('d-none');
+                              badgeNotificaciones.innerText = '0';
+                          }
+                      }
+  
+                      // Renderizar únicamente las no leídas en la lista desplegable
+                      renderListaNotificaciones(data.notificaciones);
+                  }
+              })
+              .catch(err => {
+                  // Silencioso si el usuario no ha iniciado sesión
+              });
+      }
+  
+      // 2. Pintar las notificaciones en el HTML con su respectivo enlace
+      function renderListaNotificaciones(notificaciones) {
+          if (!listaNotificaciones) return;
+  
+          if (notificaciones.length === 0) {
+              listaNotificaciones.innerHTML = `<div class="p-3 text-center text-muted" style="font-size: 0.85rem;">No tienes notificaciones nuevas.</div>`;
+              return;
+          }
+  
+          listaNotificaciones.innerHTML = "";
+          notificaciones.forEach(notif => {
+              const item = document.createElement("div");
+              item.className = "list-group-item list-group-item-action p-3 bg-light border-bottom";
+              
+              item.innerHTML = `
+                  <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                      <strong class="text-primary" style="font-size: 0.9rem;">${notif.titulo}</strong>
+                      <small class="text-muted" style="font-size: 0.75rem;">${notif.fecha}</small>
+                  </div>
+                  <p class="mb-2 text-dark" style="font-size: 0.85rem; font-weight: normal;">${notif.mensaje}</p>
+                  <div class="text-end">
+                      <a href="${notif.url}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;" data-id="${notif.id}">
+                          Ver detalles <i class="fas fa-arrow-right ms-1"></i>
+                      </a>
+                  </div>
+              `;
+  
+              // Interceptar el clic en el botón de la notificación
+              const enlace = item.querySelector("a");
+              enlace.addEventListener("click", function (e) {
+                  e.preventDefault();
+                  const destinoUrl = this.getAttribute("href");
+                  const notifId = this.getAttribute("data-id");
+  
+                  // Marca la notificación como leída en la BD antes de saltar a la página de destino
+                  marcarComoLeidaYRedirigir(notifId, destinoUrl);
+              });
+  
+              listaNotificaciones.appendChild(item);
+          });
+      }
+  
+      // 3. Petición POST para marcar como leída y hacer la redirección limpia
+      function marcarComoLeidaYRedirigir(id, urlDestino) {
+          fetch(`/api/notificaciones/marcar-leida/${id}/`, {
+              method: 'POST',
+              headers: {
+                  'X-CSRFToken': getCookie('csrftoken'),
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(res => res.json())
+          .then(data => {
+              window.location.href = urlDestino; // Redirige al módulo correspondiente (Pedido, Factura, Cita)
+          })
+          .catch(err => {
+              window.location.href = urlDestino; // Redirige de todos modos para no bloquear al usuario
+          });
+      }
+  
+      // 4. Botón "Marcar todas leídas" del buzón
+      if (btnMarcarTodas) {
+          btnMarcarTodas.addEventListener("click", function (e) {
+              e.preventDefault();
+              fetch(`/api/notificaciones/marcar-leida/0/`, {
+                  method: 'POST',
+                  headers: {
+                      'X-CSRFToken': getCookie('csrftoken'),
+                      'Content-Type': 'application/json'
+                  }
+              })
+              .then(res => res.json())
+              .then(data => {
+                  cargarNotificaciones(); // Limpia la lista y el badge al instante
+              });
+          });
+      }
+  
+      // Inicializar sondeo si el contenedor de notificaciones existe en la vista actual
+      if (dropdownNotificacionesBtn) {
+          cargarNotificaciones();
+          setInterval(cargarNotificaciones, 10000); // Consulta cada 10 segundos
+      }
+  });
+  </script>
+
+  <script src="{% static 'vendor/js/bootstrap.bundle.min.js' %}"></script>
+
+  {% if messages %}
+    <script id="django-msgs" type="application/json">
+      [
+        {% for m in messages %}
+          {
+            "texto": "{{ m|escapejs }}",
+            "tag": "{{ m.tags|default:'info'|escapejs }}"
+          }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      ]
+    </script>
+  {% endif %}
+
+  <script src="{% static 'js/base-control.js' %}"></script>
+  <script src="{% static 'vendor/js/base.js' %}"></script>
+  <script src="{% static 'vendor/js/sidebar-folders.js' %}"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.getElementById('masterAdminSidebar');
+        const btnCollapse = document.getElementById('btnCollapseSidebar');
+        const btnCloseTotal = document.getElementById('btnCloseSidebarTotal');
+        const btnRescue = document.getElementById('rescueSidebarBtn');
+
+        // Si el sidebar no existe en el DOM (ej. vista pública), matamos la ejecución para no generar errores de JS
+        if (!sidebar) return;
+
+        // 1. Persistencia de estados guardados en Session
+        if (sessionStorage.getItem('sicoven-menu-collapsed') === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+        if (sessionStorage.getItem('sicoven-menu-closed') === 'true') {
+            sidebar.classList.add('closed-total');
+            btnRescue.style.display = 'block';
+        }
+
+        // 2. Acción: Compactar a íconos
+        btnCollapse.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            sessionStorage.setItem('sicoven-menu-collapsed', sidebar.classList.contains('collapsed'));
+        });
+
+        // 3. Acción: Cerrar al 100% (Desaparecer)
+        btnCloseTotal.addEventListener('click', () => {
+            sidebar.classList.add('closed-total');
+            sessionStorage.setItem('sicoven-menu-closed', 'true');
+            btnRescue.style.display = 'block';
+        });
+
+        // 4. Acción: Rescatar menú desde botón flotante
+        btnRescue.addEventListener('click', () => {
+            sidebar.classList.remove('closed-total');
+            sessionStorage.setItem('sicoven-menu-closed', 'false');
+            btnRescue.style.display = 'none';
+        });
+
+        // 5. Iluminación inteligente de módulo activo
+        const pathActual = window.location.pathname;
+        const modulos = document.querySelectorAll('.taller-link');
+
+        modulos.forEach(link => {
+            const urlDestino = link.getAttribute('href');
+            if (urlDestino && urlDestino !== '#' && pathActual.includes(urlDestino)) {
+                link.classList.add('active-module');
+            }
+        });
+    });
+  </script>
+
+
+
+<script>function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+</script>
+
+  {% block extra_scripts %}{% endblock %}
+
+
+
+</body>
+
+
+
+</html>
+<footer class="main-footer">
+    <div class="footer-container">
+        <!-- Bloque de información y copyright -->
+        <div class="footer-info">
+            <p class="footer-copyright">
+                Serviautomotriz Fernández &copy; 2026 Todos los derechos reservados.
+            </p>
+            <div class="footer-support">
+                <p>
+                    ¿Necesitas ayuda? Contáctanos al
+                    <a href="tel:04245787208" class="support-phone">0424-5787208</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Bloque de créditos -->
+        <p class="footer-credits">
+            Desarrollado con pasión por
+            <span class="credit-author">Amadox corporation</span> &
+            <span class="credit-author">CKRL</span>
+        </p>
+    </div>
+</footer>

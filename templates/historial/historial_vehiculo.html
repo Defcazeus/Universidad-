@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historial Clínico - {{ vehiculo.marca }} {{ vehiculo.modelo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-2">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="border-bottom pb-2" style="color: var(--oscuro); font-weight: 800;">
+                <i class="bi bi-car-front-fill me-2" style="color: var(--naranja);"></i>HISTORIAL CLÍNICO DE VEHÍCULOS
+            </h2>
+            <p class="text-muted">Consulte los registros de diagnóstico técnico, kilometrajes de ingreso y reparaciones definitivas por placa.</p>
+        </div>
+    </div>
+
+    <div class="row gap-4 justify-content-center">
+        
+        <!-- COLUMNA IZQUIERDA: RESUMEN TÉCNICO DE LA MÁQUINA -->
+        <div class="col-md-4">
+            <div class="p-4" style="background: var(--blanco); border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 5px solid var(--naranja);">
+                
+                <div class="text-center mb-4 p-2 bg-light rounded-3 border" style="min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div>
+                        <i class="bi bi-shield-shaded h1 d-block text-secondary mb-1"></i>
+                        <span class="fs-3 fw-black font-monospace text-dark d-block" style="letter-spacing: 2px;">{{ vehiculo.placa }}</span>
+                        <small class="text-muted fw-bold">{{ vehiculo.marca }} {{ vehiculo.modelo }}</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <span class="badge bg-light text-dark border mb-1">????? }}</span>
+                    <!-- Datos del dueño -->
+                    <h5 style="font-weight: 800; color: var(--oscuro); margin: 0;">Propietario: {{ vehiculo.cedula_usuario.nombre }}</h5>
+                    <span class="font-monospace text-muted fw-bold d-block mt-1" style="font-size: 0.9rem;">C.I: {{ vehiculo.cedula_usuario.cedula_usuario }}</span>
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-6">
+                        <div class="p-2 border rounded-3 bg-light">
+                            <small class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">ÚLTIMO KM</small>
+                            <span class="fs-5 fw-bold text-dark">
+                                {% if fichas %}{{ fichas.first.kilometraje_ingreso }}{% else %}{{ vehiculo.km_inicial|default:"0" }}{% endif %}
+                                <small style="font-size: 0.75rem;">km</small>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border rounded-3 bg-light">
+                            <small class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">SERVICIOS</small>
+                            <span class="fs-5 fw-bold text-success">{{ fichas.count }} Registros</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3" style="background-color: #f8f9fa; font-size: 0.9rem;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Año del Modelo:</span>
+                        <span class="fw-bold text-dark">{{ vehiculo.anno|default:"N/A" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Estado del Motor:</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                            <i class="bi bi-check-circle-fill me-1"></i> VER QUE COLOCAR AQUI
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: LISTADO CRONOLÓGICO DE INTERVENCIONES -->
+        <div class="col-md-7">
+            <div class="p-4 bg-white" style="border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+                <h4 class="mb-4" style="font-weight: 700; color: var(--oscuro);">Fichas Clínicas Registradas</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead style="background-color: var(--oscuro); color: white;">
+                            <tr>
+                                <th class="p-3">Ficha ID</th>
+                                <th class="p-3">Cita Ref.</th>
+                                <th class="p-3">KM Ingreso</th>
+                                <th class="p-3" style="width: 50%;">Diagnóstico y Solución</th>
+                                <th class="p-3">Fecha Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ficha in fichas %}
+                            <tr>
+                                <td class="p-3 font-monospace fw-bold text-secondary">#HVE-{{ ficha.id_historial_vehiculo|stringformat:"03d" }}</td>
+                                <td class="p-3">
+                                    <span class="badge bg-dark font-monospace text-warning">#CIT-{{ ficha.cod_cita.cod_cita|default:"N/A" }}</span>
+                                </td>
+                                <td class="p-3 font-monospace small">{{ ficha.kilometraje_ingreso }} km</td>
+                                <td class="p-3">
+                                    <!-- Sección de Diagnóstico extraído del registro de historial -->
+                                    <div class="fw-bold text-dark mb-1" style="font-size: 0.85rem;">
+                                        <i class="bi bi-activity text-danger me-1"></i>Diagnóstico Técnico:
+                                    </div>
+                                    <p class="text-muted small mb-2">{{ ficha.diagnostico_final }}</p>
+                                    
+                                    <!-- Sección de Reparación Final ejecutada -->
+                                    <div class="fw-bold text-dark mb-1" style="font-size: 0.85rem;">
+                                        <i class="bi bi-wrench text-success me-1"></i>Reparaciones Realizadas:
+                                    </div>
+                                    <p class="text-secondary small mb-2">{{ ficha.reparaciones_realizadas }}</p>
+
+                                    {% if ficha.observaciones_recomendadas %}
+                                    <!-- Observaciones adicionales opcionales -->
+                                    <div class="fw-bold text-dark mb-1" style="font-size: 0.85rem;">
+                                        <i class="bi bi-exclamation-triangle text-warning me-1"></i>Recomendaciones:
+                                    </div>
+                                    <p class="text-muted small m-0">{{ ficha.observaciones_recomendadas }}</p>
+                                    {% endif %}
+                                </td>
+                                <td class="p-3 text-muted small">{{ ficha.fecha_registro|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center p-4 text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Este vehículo no posee intervenciones o reparaciones cerradas en el sistema.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

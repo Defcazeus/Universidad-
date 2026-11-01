@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel Web - Noticias y Promociones{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+  <!-- HEADER MODULAR -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Gestión del Landing</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Noticias y Promociones</h1>
+      <p class="text-xs text-slate-400 font-medium">Publica avisos, ofertas especiales e información relevante para tus clientes.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <a
+        href="{% url 'portal_web' %}"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <span>Configuración General</span>
+      </a>
+
+      <a
+        href="{% url 'galeria_dinamica' %}"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <span>Galería Dinámica</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO: NOTICIAS Y PROMOCIONES -->
+  <div class="row gap-4 justify-content-center">
+    <div class="col-md-4 bg-white p-4" style="border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.05);">
+      <h4 class="mb-3" style="font-weight:700;">Redactar Aviso</h4>
+      <form method="POST" action="" class="p-0 shadow-none">
+        {% csrf_token %}
+        <input type="hidden" name="action_portal" value="nueva_noticia">
+
+        <label class="form-label fw-semibold">Título del Aviso / Promo</label>
+        <input type="text" name="titulo" placeholder="Ej: 20% de Descuento en Frenos este mes" required class="mb-3">
+
+        <label class="form-label fw-semibold">Cuerpo del Mensaje</label>
+        <textarea name="descripcion" rows="4" placeholder="Escribe el contenido detallado aquí..." style="border:1px solid #ddd; border-radius:8px; width:100%; padding:12px; resize:none;" required></textarea>
+
+        <button type="submit" class="mt-3" style="background-color: var(--oscuro); color:white;"><i class="bi bi-megaphone-fill me-2 text-warning"></i>Lanzar Publicación</button>
+      </form>
+    </div>
+
+    <div class="col-md-7 bg-white p-4" style="border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.05);">
+      <h4 class="mb-4" style="font-weight:700;">Historial de Avisos en Cartelera</h4>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th class="p-3">Fecha</th>
+              <th class="p-3">Título</th>
+              <th class="p-3">Extracto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for n in noticias %}
+            <tr>
+              <td class="p-3 small text-muted">{{ n.fecha_publicacion|date:"d/m/Y" }}</td>
+              <td class="p-3 fw-bold text-dark">{{ n.titulo }}</td>
+              <td class="p-3 text-muted small">{{ n.descripcion|truncatechars:60 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center p-3 text-muted">No hay noticias publicadas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

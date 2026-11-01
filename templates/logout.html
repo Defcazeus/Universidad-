@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cerrar Sesión{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+  <div class="alert alert-info" role="alert">
+    <h4 class="alert-heading">Sesión finalizada</h4>
+    <p>Has cerrado sesión exitosamente. ¡Hasta pronto!</p>
+    <hr>
+    <a href="{% url 'login' %}" class="btn btn-primary mt-3">
+      🔑 Iniciar sesión nuevamente
+    </a>
+  </div>
+</div>
+{% endblock %}

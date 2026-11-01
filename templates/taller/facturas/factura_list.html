@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historial de Facturas - Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<!-- CSS Dependencies -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+  /* Paginación estilizada */
+  .dataTables_wrapper .dataTables_paginate .paginate_button.active .page-link {
+    background-color: #0f172a !important; /* bg-slate-900 */
+    border-color: #0f172a !important;
+    color: #ffffff !important;
+  }
+  .dataTables_wrapper .dataTables_paginate .page-link {
+    border-radius: 0.5rem !important;
+    margin: 0 2px !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    color: #334155 !important;
+  }
+  /* Estilo contenedor de botones DataTables */
+  .dt-buttons {
+    display: inline-flex;
+    gap: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+
+  <!-- HEADER HOMOLOGADO -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Módulo de Ventas & Facturación</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Historial de Facturas</h1>
+      <p class="text-xs text-slate-400 font-medium">Consulta el historial de ventas, emite notas de cancelación y revisa los desgloses fiscales.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <a 
+        href="#" 
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span>Ir a Gestión de Ventas</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- PANEL PRINCIPAL CONTENEDOR -->
+  <main class="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+    
+    <!-- BARRA DE FILTROS Y BÚSQUEDA ADAPTADA -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div>
+        <h2 class="text-base font-extrabold text-slate-900 uppercase tracking-tight">Facturas Registradas</h2>
+        <p class="text-xs text-slate-500 font-medium">Consulta el historial comercial y exporta reportes de ventas</p>
+      </div>
+
+      <!-- BUSCADOR CON DESPLEGABLE DE CRITERIO -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-xl">
+        <div class="flex items-center bg-slate-100 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-orange-500 transition-all w-full">
+          <span class="px-3 text-[11px] font-black uppercase tracking-wider text-slate-600 bg-slate-200/60 border-r border-slate-200 py-2.5 shrink-0">
+            Filtro
+          </span>
+          <select id="selectCategoriaBusqueda" class="px-3 py-2 bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer border-r border-slate-200 shrink-0">
+            <option value="global" selected>Todo</option>
+            <option value="0">N° Factura</option>
+            <option value="1">Fecha</option>
+            <option value="2">Cliente</option>
+            <option value="3">Total</option>
+            <option value="4">Estado</option>
+          </select>
+          <div class="relative w-full flex items-center">
+            <input 
+              type="text" 
+              id="inputBusquedaCustom" 
+              placeholder="Escribe para buscar..." 
+              class="w-full pl-3 pr-9 py-2 bg-transparent text-xs text-slate-900 placeholder-slate-400 font-mono outline-none"
+            >
+            <svg class="w-4 h-4 absolute right-3 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA DE FACTURAS -->
+    <div class="overflow-x-auto rounded-xl border border-slate-200">
+      <table id="tablaFacturas" class="w-full text-left border-collapse">
+        <thead class="bg-slate-900 text-white text-[11px] font-black uppercase tracking-wider">
+          <tr>
+            <th class="p-3.5 border-b border-slate-800">N° Factura</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Fecha</th>
+            <th class="p-3.5 border-b border-slate-800">Cliente</th>
+            <th class="p-3.5 border-b border-slate-800 text-right">Total ($)</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Estado</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-xs font-medium">
+          {% for factura in facturas %}
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              
+              <!-- N° FACTURA -->
+              <td class="p-3.5">
+                <span class="px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-[11px] font-bold rounded-lg border border-slate-800">
+                  {{ factura.identificador }}
+                </span>
+              </td>
+
+              <!-- FECHA -->
+              <td class="p-3.5 text-center font-mono text-slate-600">
+                {{ factura.fecha_emision|date:"d/m/Y H:i" }}
+              </td>
+
+              <!-- CLIENTE -->
+              <td class="p-3.5 font-bold text-slate-900">
+                {{ factura.cod_pedido.cedula_usuario.get_full_name }}
+              </td>
+
+              <!-- TOTAL -->
+              <td class="p-3.5 text-right font-mono font-bold text-slate-900 text-sm">
+                ${{ factura.total_pagado|floatformat:2 }}
+              </td>
+
+              <!-- ESTADO CON BADGES -->
+              <td class="p-3.5 text-center">
+                {% if factura.estado == 'PAGADA' %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md border border-emerald-200 uppercase">
+                    Pagada
+                  </span>
+                {% elif factura.estado == 'EMITIDA' %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-md border border-amber-200 uppercase">
+                    Emitida
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-red-100 text-red-800 rounded-md border border-red-200 uppercase">
+                    Anulada
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- ACCIONES -->
+              <td class="p-3.5 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <button 
+                    type="button" 
+                    onclick="verDetalle('{{ factura.id_factura }}')"                 
+                    class="p-2 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg border border-transparent hover:border-slate-200 transition" 
+                    title="Ver Detalle"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+
+                  {% if factura.estado != 'ANULADA' %}
+                    <form action="{% url 'anular_factura' factura.id_factura %}" method="POST" class="inline" onsubmit="return confirmAnular(event, this);">
+                      {% csrf_token %}
+                      <button 
+                        type="submit" 
+                        class="p-2 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-lg border border-transparent hover:border-red-200 transition"
+                        title="Anular Factura"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="py-16 text-center bg-white">
+                <div class="max-w-xs mx-auto space-y-2">
+                  <svg class="w-12 h-12 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  <p class="text-xs font-bold text-slate-700 uppercase">No se encontraron facturas registradas</p>
+                  <p class="text-xs text-slate-400">Intenta realizar una búsqueda con diferentes términos o filtros.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL PARA DETALLE DE FACTURA -->
+<div class="modal fade" id="modalDetalleFactura" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      
+      <!-- HEADER MODAL -->
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <div>
+          <span class="text-[10px] font-mono uppercase tracking-widest text-orange-400 font-bold block">Comprobante de Venta</span>
+          <h3 class="text-sm font-black uppercase tracking-widest">Detalle de Factura <span id="modalNumFactura" class="text-orange-400"></span></h3>
+        </div>
+        <button type="button" class="text-slate-400 hover:text-white text-2xl leading-none" data-bs-dismiss="modal">&times;</button>
+      </div>
+
+      <!-- BODY MODAL -->
+      <div class="p-6 space-y-4">
+        
+        <!-- DATOS GENERALES FACTURA -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+          <div>
+            <p class="text-slate-500 font-bold uppercase text-[10px]">Cliente</p>
+            <p id="modalCliente" class="font-bold text-slate-900 text-sm"></p>
+            
+            <p class="text-slate-500 font-bold uppercase text-[10px] mt-2">Fecha Emisión</p>
+            <p id="modalFecha" class="font-mono text-slate-700"></p>
+          </div>
+          <div class="md:text-right">
+            <p class="text-slate-500 font-bold uppercase text-[10px]">Estado Actual</p>
+            <span id="modalEstado" class="inline-block mt-1 font-mono font-bold uppercase"></span>
+          </div>
+        </div>
+
+        <!-- TABLA ITEMS EN MODAL -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="p-3">Producto / Servicio</th>
+                <th class="p-3 text-center">Cantidad</th>
+                <th class="p-3 text-right">Precio Unit.</th>
+                <th class="p-3 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="modalTablaItems" class="divide-y divide-slate-100 text-xs font-medium">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- RESUMEN TOTALES -->
+        <div class="flex justify-end pt-2">
+          <div class="w-full md:w-64 space-y-1.5 p-4 bg-slate-900 text-white rounded-xl font-mono text-xs">
+            <div class="flex justify-between text-slate-400">
+              <span>Subtotal:</span>
+              <span>$<span id="modalSubtotal">0.00</span></span>
+            </div>
+            <div class="flex justify-between text-slate-400 pb-2 border-b border-slate-800">
+              <span>IVA / Impuesto:</span>
+              <span>$<span id="modalImpuesto">0.00</span></span>
+            </div>
+            <div class="flex justify-between font-extrabold text-sm text-orange-400 pt-1">
+              <span>Total:</span>
+              <span>$<span id="modalTotal">0.00</span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FOOTER MODAL -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button type="button" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase bg-slate-200 text-slate-700 hover:bg-slate-300 transition" data-bs-dismiss="modal">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- JS Dependencies -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- DataTables Buttons Extensions -->
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    let table = null;
+
+    // Inicialización condicional de DataTable para #tablaFacturas
+    if ($('#tablaFacturas tbody tr td').length > 1) {
+        table = $('#tablaFacturas').DataTable({
+            "order": [[0, 'desc']],
+            "dom": "<'row'<'col-12'tr>>" + "<'row mt-4 align-items-center'<'col-md-4 text-xs text-slate-500'i><'col-md-8 text-md-end'Bp>>",
+            "buttons": [
+                { 
+                    extend: 'print', 
+                    text: 'Imprimir', 
+                    className: 'px-3 py-1.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition cursor-pointer border-0' 
+                },
+                { 
+                    extend: 'excel', 
+                    text: 'Exportar a Excel', 
+                    className: 'px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition cursor-pointer border-0' 
+                }
+            ],
+            "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+            "columnDefs": [{ "searchable": false, "orderable": false, "targets": [5] }] // Deshabilita orden/búsqueda en columna Acciones
+        });
+    }
+
+    // Buscador personalizado según criterio seleccionado
+    $('#inputBusquedaCustom').on('input', function() {
+        if (!table) return;
+        const col = $('#selectCategoriaBusqueda').val();
+        if (col === "global") {
+            table.search(this.value).draw();
+        } else {
+            table.columns().search(''); // Limpia búsquedas previas en columnas específicas
+            table.column(col).search(this.value).draw();
+        }
+    });
+
+    // Actualiza la búsqueda si cambia la categoría seleccionada teniendo texto escrito
+    $('#selectCategoriaBusqueda').on('change', function() {
+        $('#inputBusquedaCustom').trigger('input');
+    });
+});
+
+// Manejo de confirmación de anulación elegante con SweetAlert2
+function confirmAnular(event, form) {
+    event.preventDefault();
+    Swal.fire({
+        title: '¿Anular Factura?',
+        text: 'Esta acción cancelará el comprobante fiscal. ¿Deseas continuar?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Sí, Anular',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+    return false;
+}
+
+// Carga AJAX de detalle de factura para modal
+function verDetalle(id) {
+    fetch(`/admin/facturas/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('modalNumFactura').innerText = data.identificador;
+            document.getElementById('modalCliente').innerText = data.usuario;
+            document.getElementById('modalFecha').innerText = data.fecha_emision;
+            
+            let estadoElement = document.getElementById('modalEstado');
+            if (data.estado === 'PAGADA') {
+                estadoElement.className = "inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md border border-emerald-200 uppercase";
+            } else if (data.estado === 'EMITIDA') {
+                estadoElement.className = "inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-md border border-amber-200 uppercase";
+            } else {
+                estadoElement.className = "inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-red-100 text-red-800 rounded-md border border-red-200 uppercase";
+            }
+            estadoElement.innerText = data.estado;
+
+            document.getElementById('modalSubtotal').innerText = Number(data.subtotal).toFixed(2);
+            document.getElementById('modalTotal').innerText = Number(data.total_pagado).toFixed(2);
+            document.getElementById('modalImpuesto').innerText = Number(data.total_pagado - data.subtotal).toFixed(2);
+
+            let tbody = document.getElementById('modalTablaItems');
+            tbody.innerHTML = '';
+
+            data.items.forEach(item => {
+                let row = `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-bold text-slate-800">${item.nombre}</td>
+                        <td class="p-3 text-center font-mono">${item.cantidad}</td>
+                        <td class="p-3 text-right font-mono">$${Number(item.precio_unitario).toFixed(2)}</td>
+                        <td class="p-3 text-right font-mono font-bold">$${Number(item.subtotal_linea).toFixed(2)}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            let modal = new bootstrap.Modal(document.getElementById('modalDetalleFactura'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error al cargar detalle:', error);
+            Swal.fire('Atención', 'Ocurrió un error al consultar el detalle de la factura.', 'error');
+        });
+}
+</script>
+{% endblock %}

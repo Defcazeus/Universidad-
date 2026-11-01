@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Producto - {{ producto.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-2">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="border-bottom pb-2" style="color: var(--oscuro); font-weight: 800;">
+                <i class="bi bi-journal-text me-2" style="color: var(--naranja);"></i>HOJA DE VIDA / KARDEX
+            </h2>
+            <p class="text-muted">Historial detallado y control de movimientos para la pieza de almacén.</p>
+        </div>
+
+    </div>
+
+    <div class="row gap-4 justify-content-center">
+        
+        <div class="col-md-4">
+            <div class="p-4" style="background: var(--blanco); border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 5px solid var(--naranja);">
+                
+                <div class="text-center mb-4 p-2 bg-light rounded-3 border" style="min-height: 180px; display: flex; align-items: center; justify-content: center;">
+                    {% if producto.imagen_url %}
+                        <img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" class="img-fluid rounded" style="max-height: 160px; object-fit: contain;">
+                    {% else %}
+                        <div class="text-muted">
+                            <i class="bi bi-image h1 d-block text-secondary mb-1"></i>
+                            <small style="font-size: 0.8rem;">Sin imagen en el catálogo</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <span class="badge bg-light text-dark border mb-1">{{ producto.id_cat_producto.nombre }}</span>
+                    <h4 style="font-weight: 800; color: var(--oscuro); margin: 0;">{{ producto.nombre }}</h4>
+                    <span class="font-monospace text-muted fw-bold d-block mt-1" style="font-size: 0.9rem;">SKU: {{ producto.sku }}</span>
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-6">
+                        <div class="p-2 border rounded-3 bg-light">
+                            <small class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">STOCK ACTUAL</small>
+                            {% if producto.stock_actual <= producto.stock_minimo %}
+                                <span class="fs-5 fw-bold text-danger">{{ producto.stock_actual }} <i class="bi bi-exclamation-triangle-fill" style="font-size: 0.85rem;"></i></span>
+                            {% else %}
+                                <span class="fs-5 fw-bold text-success">{{ producto.stock_actual }} <small style="font-size: 0.8rem;">uds</small></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border rounded-3 bg-light">
+                            <small class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">PRECIO VENTA</small>
+                            <span class="fs-5 fw-bold text-dark">${{ producto.precio_venta }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3" style="background-color: #f8f9fa; font-size: 0.9rem;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Stock Mínimo Alerta:</span>
+                        <span class="fw-bold text-dark">{{ producto.stock_minimo }} uds</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Catálogo Web (Activo):</span>
+                        {% if producto.activo %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="bi bi-eye-fill me-1"></i> Publicado
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-muted border px-2 py-1">
+                                <i class="bi bi-eye-slash me-1"></i> Oculto
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button class="w-100" style="background-color: var(--oscuro); font-weight: 600;">
+                        <i class="bi bi-pencil-square me-2"></i>Editar Información
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="p-4 bg-white" style="border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+                <h4 class="mb-4" style="font-weight: 700; color: var(--oscuro);">Historial de Entradas y Salidas</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead style="background-color: var(--oscuro); color: white;">
+                            <tr>
+                                <th class="p-3">Fecha / Hora</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Descripción / Referencia</th>
+                                <th class="p-3 text-center">Cantidad</th>
+                                <th class="p-3 text-center">Stock Resultante</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movimiento in movimientos %}
+                            <tr>
+                                <td class="p-3 text-muted" style="font-size: 0.9rem;">{{ movimiento.fecha_movimiento|date:"d/m/Y h:i A" }}</td>
+                                
+                                <td class="p-3">
+                                    {% if "ENTRADA" in movimiento.tipo_movimiento %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                            <i class="bi bi-box-arrow-in-down me-1"></i> Entrada
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                            <i class="bi bi-box-arrow-up me-1"></i> Salida
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                
+                                <td class="p-3 fw-semibold text-dark">
+                                    {{ movimiento.descripcion }}
+                                </td>
+                                
+                                <td class="p-3 text-center fw-bold {% if 'ENTRADA' in movimiento.tipo_movimiento %}text-success{% else %}text-danger{% endif %}">
+                                    {{ movimiento.cantidad }}
+                                </td>
+                            
+                                <td class="p-3 text-center font-monospace fw-bold text-secondary bg-light-subtle">{{ producto.stock_actual }} uds</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center p-4 text-muted">
+                                    <i class="bi bi-calendar-x h1 d-block text-secondary mb-2"></i>
+                                    Este producto no registra movimientos de inventario todavía.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

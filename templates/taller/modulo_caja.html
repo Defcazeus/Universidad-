@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Flujo de Caja - Serviautomotriz Fernández{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-2">
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="border-bottom pb-2" style="color: var(--oscuro); font-weight: 800;">
+                <i class="bi bi-cash-coin me-2" style="color: var(--naranja);"></i>FLUJO DE CAJA CHICA
+            </h2>
+            <p class="text-muted">Movimientos transaccionales del taller. Registro directo de entradas de dinero o salidas por gastos operativos.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="p-4 bg-white" style="border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+                
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-6">
+                        <h4 class="m-0" style="font-weight: 700; color: var(--oscuro); font-size: 1.25rem;">Bitácora de Eventos Financieros</h4>
+                    </div>
+                    <div class="col-md-6 d-flex justify-content-md-end justify-content-start gap-2 mt-2 mt-md-0">
+                        <button type="button" class="btn btn-sm fw-bold px-3 py-1.5 text-white d-inline-flex align-items-center gap-2" 
+                                style="background-color: var(--naranja); border: none; border-radius: 6px; font-size: 0.85rem;"
+                                data-bs-toggle="modal" data-bs-target="#modalNuevoMovimientoCaja">
+                            <i class="bi bi-plus-circle-fill text-warning"></i>
+                            <span>Registrar Movimiento Manual</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead style="background-color: var(--oscuro); color: white;">
+                            <tr>
+                                <th class="p-3">ID Bitácora</th>
+                                <th class="p-3">Fecha Evento</th>
+                                <th class="p-3">Tipo de Evento</th>
+                                <th class="p-3">Monto Afectado</th>
+                                <th class="p-3" style="width: 35%;">Detalles de la Operación</th>
+                                <th class="p-3">Administrador</th>
+                                <th class="p-3 text-center">Ref. Transacción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="transition: background-color 0.2s;">
+                                <td class="p-3 font-monospace fw-bold text-secondary">#CAJA-1002</td>
+                                <td class="p-3 text-muted small"><i class="bi bi-calendar3 me-1"></i>02/06/2026</td>
+                                <td class="p-3"><span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-arrow-down-left-circle-fill me-1"></i> INGRESO</span></td>
+                                <td class="p-3 fw-bold text-success" style="font-size: 1rem;">+$120.00</td>
+                                <td class="p-3 text-secondary small">Pago remanente de mano de obra O.T #545 en efectivo de mostrador.</td>
+                                <td class="p-3 font-monospace small">V-25894331</td>
+                                <td class="p-3 text-center font-monospace text-muted small">#TR-8891</td>
+                            </tr>
+                            <tr style="transition: background-color 0.2s;">
+                                <td class="p-3 font-monospace fw-bold text-secondary">#CAJA-1001</td>
+                                <td class="p-3 text-muted small"><i class="bi bi-calendar3 me-1"></i>01/06/2026</td>
+                                <td class="p-3"><span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-arrow-up-right-circle-fill me-1"></i> EGRESO</span></td>
+                                <td class="p-3 fw-bold text-danger" style="font-size: 1rem;">-$35.50</td>
+                                <td class="p-3 text-secondary small">Compra de agua mineral para los dispensadores del taller y bombillos de repuesto para oficina.</td>
+                                <td class="p-3 font-monospace small">V-25894331</td>
+                                <td class="p-3 text-center font-monospace text-muted small">#TR-MANUAL</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include "componentes/modals_crud.html" with titulo_crear="Registrar Evento Financiero Manual" icono_modulo="bi bi-cash-coin" id_modal_crear="modalNuevoMovimientoCaja" action_crear="" campos_modal=campos_flujo_caja %}
+
+</div>
+{% endblock %}

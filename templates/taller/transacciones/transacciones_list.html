@@ -1,0 +1,601 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Registro de Transacciones - Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+<div id="usuario-sesion" data-username="{{ usuario_nombre }}" class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+
+  <!-- HEADER HOMOLOGADO -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Módulo Financiero</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Historial de Transacciones</h1>
+      <p class="text-xs text-slate-400 font-medium">Consulta el registro detallado de pagos, montos cobrados y auditoría de transacciones del taller.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <a
+        href="{% url 'pedido_list' %}"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span>Ir a Gestión de Ventas</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- PANEL PRINCIPAL CONTENEDOR DE LA TABLA -->
+  <main class="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+
+    <!-- BARRA DE FILTROS Y BÚSQUEDA -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div>
+        <h2 class="text-base font-extrabold text-slate-900 uppercase tracking-tight">Transacciones Registradas</h2>
+        <p class="text-xs text-slate-500 font-medium">Listado de transacciones con sus estados y facturas asociadas</p>
+      </div>
+
+      <!-- BUSCADOR CON DESPLEGABLE DE CRITERIO -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-xl">
+        <div class="flex items-center bg-slate-100 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-orange-500 transition-all w-full">
+          <span class="px-3 text-[11px] font-black uppercase tracking-wider text-slate-600 bg-slate-200/60 border-r border-slate-200 py-2.5 shrink-0">
+            Filtro
+          </span>
+          <select id="selectCategoriaBusqueda" class="px-3 py-2 bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer border-r border-slate-200 shrink-0">
+            <option value="global" selected>Todo</option>
+            <option value="0">ID Factura</option>
+            <option value="1">Fecha Pago</option>
+            <option value="4">Estado</option>
+          </select>
+          <div class="relative w-full flex items-center">
+            <input
+              type="text"
+              id="inputBusquedaCustom"
+              placeholder="Escribe para buscar..."
+              class="w-full pl-3 pr-9 py-2 bg-transparent text-xs text-slate-900 placeholder-slate-400 font-mono outline-none"
+            >
+            <svg class="w-4 h-4 absolute right-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA DE TRANSACCIONES -->
+    <div class="overflow-x-auto rounded-xl border border-slate-200">
+      <table id="tablaTransacciones" class="w-full text-left border-collapse">
+        <thead class="bg-slate-900 text-white text-[11px] font-black uppercase tracking-wider">
+          <tr>
+            <th class="p-3.5 border-b border-slate-800">ID Factura</th>
+            <th class="p-3.5 border-b border-slate-800">Fecha Pago</th>
+            <th class="p-3.5 border-b border-slate-800 text-right">Monto a Pagar</th>
+            <th class="p-3.5 border-b border-slate-800 text-right">Monto Recibido</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Estado</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-xs font-medium">
+          {% for trans in transacciones %}
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <!-- FACTURA -->
+              <td class="p-3.5 font-bold text-slate-900">
+                {% if trans.id_factura %}
+                  <span class="text-slate-800 font-mono">#{{ trans.id_factura.identificador }}</span>
+                {% else %}
+                  <span class="text-slate-400 italic">Sin Factura</span>
+                {% endif %}
+              </td>
+
+              <!-- FECHA DE PAGO -->
+              <td class="p-3.5 font-mono text-slate-700">
+                {{ trans.fecha_pago|date:"Y-m-d H:i"|default:"-" }}
+              </td>
+
+              <!-- MONTO TOTAL A PAGAR -->
+              <td class="p-3.5 text-right font-mono font-bold text-slate-900 text-sm">
+                ${{ trans.monto_total_a_pagar|floatformat:2 }}
+              </td>
+
+              <!-- MONTO TOTAL RECIBIDO -->
+              <td class="p-3.5 text-right font-mono font-bold text-emerald-700 text-sm">
+                ${{ trans.monto_total_recibido|floatformat:2 }}
+              </td>
+
+              <!-- ESTADO TRANSACCIÓN -->
+              <td class="p-3.5 text-center">
+                {% if trans.estado_transaccion == 'COMPLETADA' or trans.estado_transaccion == 'APROBADA' %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md border border-emerald-200 uppercase">
+                    {{ trans.estado_transaccion }}
+                  </span>
+                {% elif trans.estado_transaccion == 'PENDIENTE' %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-md border border-amber-200 uppercase">
+                    {{ trans.estado_transaccion }}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-0.5 bg-red-100 text-red-800 rounded-md border border-red-200 uppercase">
+                    {{ trans.estado_transaccion }}
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- ACCIONES -->
+              <td class="p-3.5 text-center">
+                <button
+                  type="button"
+                  onclick="verDetalleTransaccion('{{ trans.id_transaccion }}')"
+                  class="p-2 hover:bg-orange-50 text-slate-600 hover:text-orange-600 rounded-lg border border-transparent hover:border-orange-200 transition"
+                  title="Ver Detalle Completo"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="py-16 text-center bg-white">
+                <div class="max-w-xs mx-auto space-y-2">
+                  <svg class="w-12 h-12 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <p class="text-xs font-bold text-slate-700 uppercase">Sin transacciones registradas</p>
+                  <p class="text-xs text-slate-400">Las transacciones procesadas por el sistema aparecerán aquí automáticamente.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL VER DETALLE DE TRANSACCIÓN -->
+<div class="modal fade" id="modalDetalleTransaccion" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-mono font-bold text-orange-400" id="det_id_transaccion">#0</span>
+          <h3 class="text-sm font-black uppercase tracking-widest">Detalle de Transacción</h3>
+        </div>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+
+      <div class="p-6 space-y-6 text-xs text-slate-800">
+
+        <!-- RESUMEN PRINCIPAL -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-100 rounded-xl border border-slate-200">
+          <div>
+            <span class="block text-[10px] font-black text-slate-400 uppercase">Estado</span>
+            <span id="det_estado" class="font-bold text-slate-900 text-sm">-</span>
+          </div>
+          <div>
+            <span class="block text-[10px] font-black text-slate-400 uppercase">Fecha y Hora</span>
+            <span id="det_fecha" class="font-mono font-bold text-slate-900">-</span>
+          </div>
+          <div>
+            <span class="block text-[10px] font-black text-slate-400 uppercase">Descripción</span>
+            <span id="det_descripcion" class="font-medium text-slate-700">-</span>
+          </div>
+        </div>
+
+        <!-- MONTOS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 bg-orange-50 rounded-xl border border-orange-200">
+            <span class="block text-[10px] font-black text-orange-800 uppercase">Monto Total a Pagar</span>
+            <span id="det_monto_pagar" class="text-xl font-mono font-black text-orange-900">$0.00</span>
+          </div>
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+            <span class="block text-[10px] font-black text-emerald-800 uppercase">Monto Total Recibido</span>
+            <span id="det_monto_recibido" class="text-xl font-mono font-black text-emerald-900">$0.00</span>
+          </div>
+        </div>
+
+        <!-- INFORMACIÓN DE FACTURA (SI TIENE) -->
+        <div id="seccion_factura" class="space-y-2">
+          <h4 class="font-black text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1">Factura Asociada</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 font-mono">
+            <div>
+              <span class="block text-[9px] text-slate-400 uppercase font-sans">N° Factura</span>
+              <span id="fact_numero" class="font-bold">-</span>
+            </div>
+            <div>
+              <span class="block text-[9px] text-slate-400 uppercase font-sans">Fecha Emisión</span>
+              <span id="fact_fecha" class="font-bold">-</span>
+            </div>
+            <div>
+              <span class="block text-[9px] text-slate-400 uppercase font-sans">Subtotal</span>
+              <span id="fact_subtotal" class="font-bold">$0.00</span>
+            </div>
+            <div>
+              <span class="block text-[9px] text-slate-400 uppercase font-sans">Total Pagado</span>
+              <span id="fact_total" class="font-bold text-emerald-700">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÉTODOS Y DETALLES DE PAGO -->
+        <div class="space-y-2">
+          <h4 class="font-black text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1">Desglose de Método(s) de Pago</h4>
+          <div class="overflow-x-auto rounded-lg border border-slate-200">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-800 text-white text-[10px] font-black uppercase">
+                <tr>
+                  <th class="p-2.5">Método de Pago</th>
+                  <th class="p-2.5">Monto en Línea</th>
+                  <th class="p-2.5">Ref. Pasarela</th>
+                  <th class="p-2.5">Banco Origen</th>
+                </tr>
+              </thead>
+              <tbody id="tbody_detalles_pago" class="divide-y divide-slate-100 font-mono text-xs">
+                <!-- Se llena dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- PIE DEL MODAL CON EL BOTÓN DE IMPRESIÓN -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+        <button
+          type="button"
+          onclick="imprimirDetalleTransaccion()"
+          class="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white transition flex items-center gap-2 cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          Imprimir Detalle
+        </button>
+        <button type="button" data-bs-dismiss="modal" class="px-5 py-2 rounded-xl text-xs font-black uppercase bg-slate-900 text-white hover:bg-slate-800 transition">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Librerías de pdfmake para exportar a PDF personalizado -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$.fn.dataTable.ext.errMode = 'none';
+
+// Obtener de forma segura el usuario desde el DOM
+const usuarioImprimio = document.getElementById('usuario-sesion')?.getAttribute('data-username') || 'Administrador';
+const fechaGeneracion = new Date().toLocaleString('es-VE');
+
+$(document).ready(function() {
+    if ($('#tablaTransacciones').length > 0) {
+        $('#tablaTransacciones').DataTable({
+            "order": [[1, 'asc']],
+            "dom": "<'row'<'col-12'tr>>" + "<'row mt-4 align-items-center'<'col-md-4 text-xs text-slate-500 font-bold'i><'col-md-8 text-md-end'Bp>>",
+            "buttons": [
+                {
+                    extend: 'print',
+                    text: 'Imprimir',
+                    className: 'px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer me-1',
+                    title: '',
+                    exportOptions: { columns: [0, 1, 2, 3, 4] },
+                    customize: function (win) {
+                        var css = '@media print { table, th, td { border: 1px solid #94a3b8 !important; border-collapse: collapse !important; padding: 8px !important; } }',
+                            head = win.document.head || win.document.getElementsByTagName('head')[0],
+                            style = win.document.createElement('style');
+
+                        style.type = 'text/css';
+                        style.appendChild(win.document.createTextNode(css));
+                        head.appendChild(style);
+                    },
+                    messageTop: `
+                      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f97316; padding-bottom: 12px; margin-bottom: 20px; font-family: sans-serif;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <img src="{% static 'img/logo del taller.jpg' %}" style="height: 60px; width: auto; border-radius: 8px;" alt="Logo Taller">
+                          <div>
+                            <h2 style="margin: 0; font-size: 20px; color: #0f172a; text-transform: uppercase; font-weight: 900;">Serviautomotriz Fernández C.A.</h2>
+                            <span style="font-size: 11px; font-weight: bold; color: #f97316; font-family: monospace;">RIF: J-29729665-4</span>
+                          </div>
+                        </div>
+                        <div style="text-align: right; font-size: 10px; color: #475569;">
+                          <p style="margin: 0;"><strong>Reporte:</strong> Historial de Transacciones</p>
+                          <p style="margin: 2px 0 0 0;"><strong>Generado por:</strong> ${usuarioImprimio}</p>
+                          <p style="margin: 2px 0 0 0;"><strong>Fecha:</strong> ${fechaGeneracion}</p>
+                        </div>
+                      </div>
+                    `
+                },
+                {
+                    extend: 'excel',
+                    text: 'Exportar a Excel',
+                    className: 'px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer me-1',
+                    exportOptions: { columns: [0, 1, 2, 3, 4] }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: 'Exportar a PDF',
+                    className: 'px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer',
+                    orientation: 'portrait',
+                    pageSize: 'LETTER',
+                    exportOptions: { columns: [0, 1, 2, 3, 4] },
+                    customize: function(doc) {
+                        doc.defaultStyle.fontSize = 8;
+                        doc.styles.tableHeader.fontSize = 9;
+                        doc.styles.tableHeader.fillColor = '#0f172a';
+                        doc.styles.tableHeader.color = '#ffffff';
+                        doc.styles.tableHeader.bold = true;
+
+                        doc.content[1].table.body.forEach(function(row) {
+                            row.forEach(function(cell) {
+                                cell.borderColor = ['#cbd5e1', '#cbd5e1', '#cbd5e1', '#cbd5e1'];
+                            });
+                        });
+
+                        doc.content.splice(0, 0, {
+                            margin: [0, 0, 0, 15],
+                            columns: [
+                                {
+                                    width: '*',
+                                    text: [
+                                        { text: 'SERVIAUTOMOTRIZ FERNÁNDEZ C.A.\n', fontSize: 13, bold: true, color: '#0f172a' },
+                                        { text: 'RIF: J-29729665-4\n', fontSize: 9, bold: true, color: '#f97316' },
+                                        { text: 'Historial de Transacciones', fontSize: 10, italics: true, color: '#64748b' }
+                                    ]
+                                },
+                                {
+                                    width: 'auto',
+                                    alignment: 'right',
+                                    text: [
+                                        { text: 'Reporte: ', bold: true, fontSize: 8 },
+                                        { text: 'Historial de Transacciones\n', fontSize: 8 },
+                                        { text: 'Generado por: ', bold: true, fontSize: 8 },
+                                        { text: `${usuarioImprimio}\n`, fontSize: 8 },
+                                        { text: 'Fecha: ', bold: true, fontSize: 8 },
+                                        { text: `${fechaGeneracion}`, fontSize: 8 }
+                                    ]
+                                }
+                            ]
+                        });
+
+                        doc['footer'] = function(page, pages) {
+                            return {
+                                columns: [
+                                    {
+                                        alignment: 'left',
+                                        text: ' SICOVEN - Serviautomotriz Fernández | RIF: J-29729665-4',
+                                        fontSize: 7,
+                                        color: '#94a3b8',
+                                        margin: [20, 0]
+                                    },
+                                    {
+                                        alignment: 'right',
+                                        text: ['Página ', { text: page.toString() }, ' de ', { text: pages.toString() }],
+                                        fontSize: 7,
+                                        color: '#94a3b8',
+                                        margin: [0, 0, 20, 0]
+                                    }
+                                ]
+                            };
+                        };
+                    }
+                }
+            ],
+            "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+            "columnDefs": [
+                { "searchable": false, "orderable": false, "targets": 5 }
+            ]
+        });
+    }
+
+    $('#inputBusquedaCustom').on('input', function() {
+        const table = $('#tablaTransacciones').DataTable();
+        const col = $('#selectCategoriaBusqueda').val();
+        if (col === "global") {
+            table.search(this.value).draw();
+        } else {
+            table.columns().search('');
+            table.column(col).search(this.value).draw();
+        }
+    });
+});
+
+function verDetalleTransaccion(idTransaccion) {
+    $.get('/admin/transacciones/api/' + idTransaccion + '/')
+    .done(function(res) {
+        $('#det_id_transaccion').text('#' + res.id_transaccion);
+        $('#det_estado').text(res.estado_transaccion);
+        $('#det_fecha').text(res.fecha_pago || 'N/A');
+        $('#det_descripcion').text(res.descripcion || 'Sin observaciones');
+
+        const montoPagar = typeof res.monto_total_a_pagar === 'number' ? res.monto_total_a_pagar.toFixed(2) : '0.00';
+        const montoRecibido = typeof res.monto_total_recibido === 'number' ? res.monto_total_recibido.toFixed(2) : '0.00';
+
+        $('#det_monto_pagar').text('$' + montoPagar);
+        $('#det_monto_recibido').text('$' + montoRecibido);
+
+        if (res.factura) {
+            $('#seccion_factura').show();
+            $('#fact_numero').text('#' + res.factura.numero_factura);
+            $('#fact_fecha').text(res.factura.fecha_emision || 'N/A');
+            $('#fact_subtotal').text('$' + Number(res.factura.subtotal).toFixed(2));
+            $('#fact_total').text('$' + Number(res.factura.total_pagado).toFixed(2));
+        } else {
+            $('#seccion_factura').hide();
+        }
+
+        const $tbody = $('#tbody_detalles_pago');
+        $tbody.empty();
+
+        if (res.detalles_pago && res.detalles_pago.length > 0) {
+            res.detalles_pago.forEach(function(d) {
+                const montoLinea = Number(d.monto_pago_linea).toFixed(2);
+                $tbody.append(
+                    '<tr class="hover:bg-slate-50">' +
+                        '<td class="p-2.5 font-bold uppercase">' + d.metodo_pago + '</td>' +
+                        '<td class="p-2.5">$' + montoLinea + '</td>' +
+                        '<td class="p-2.5 text-slate-500">' + (d.referencia_pasarela || '-') + '</td>' +
+                        '<td class="p-2.5 text-slate-500">' + (d.banco_origen || '-') + '</td>' +
+                    '</tr>'
+                );
+            });
+        } else {
+            $tbody.append(
+                '<tr>' +
+                    '<td colspan="4" class="p-3 text-center text-slate-400 italic font-sans">No hay detalles específicos de pago registrados.</td>' +
+                '</tr>'
+            );
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalleTransaccion'));
+        modal.show();
+    })
+    .fail(function(xhr) {
+        let msg = 'No se pudo obtener el detalle de la transacción.';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+        }
+        Swal.fire('Error', msg, 'error');
+    });
+}
+
+function imprimirDetalleTransaccion() {
+    // Capturar los valores directamente de los campos del modal activo
+    const idTransaccion = document.getElementById('det_id_transaccion').textContent;
+    const estado = document.getElementById('det_estado').textContent;
+    const fecha = document.getElementById('det_fecha').textContent;
+    const descripcion = document.getElementById('det_descripcion').textContent;
+    const montoPagar = document.getElementById('det_monto_pagar').textContent;
+    const montoRecibido = document.getElementById('det_monto_recibido').textContent;
+
+    // Verificar si tiene factura asociada visible
+    const tieneFactura = document.getElementById('seccion_factura').style.display !== 'none';
+    let htmlFactura = '';
+    if (tieneFactura) {
+        const factNumero = document.getElementById('fact_numero').textContent;
+        const factFecha = document.getElementById('fact_fecha').textContent;
+        const factSubtotal = document.getElementById('fact_subtotal').textContent;
+        const factTotal = document.getElementById('fact_total').textContent;
+
+        htmlFactura = `
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 12px; font-weight: 900; text-transform: uppercase; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 8px;">Factura Asociada</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <tr>
+                        <td style="padding: 6px; border: 1px solid #94a3b8;"><strong>N° Factura:</strong> ${factNumero}</td>
+                        <td style="padding: 6px; border: 1px solid #94a3b8;"><strong>Fecha Emisión:</strong> ${factFecha}</td>
+                        <td style="padding: 6px; border: 1px solid #94a3b8;"><strong>Subtotal:</strong> ${factSubtotal}</td>
+                        <td style="padding: 6px; border: 1px solid #94a3b8;"><strong>Total Pagado:</strong> ${factTotal}</td>
+                    </tr>
+                </table>
+            </div>
+        `;
+    }
+
+    // Capturar las filas de la tabla de métodos de pago
+    const filasPagosHtml = document.getElementById('tbody_detalles_pago').innerHTML;
+
+    // Abrir ventana de impresión con el diseño corporativo idéntico al reporte general
+    const ventanaImpresion = window.open('', '_blank', 'height=700,width=900');
+
+    ventanaImpresion.document.write(`
+        <html>
+        <head>
+            <title>Reporte Detallado - Transacción ${idTransaccion}</title>
+            <style>
+                body { font-family: sans-serif; padding: 25px; color: #0f172a; background: #fff; font-size: 12px; }
+                table, th, td { border: 1px solid #94a3b8 !important; border-collapse: collapse !important; padding: 8px !important; font-size: 11px; }
+                th { background-color: #0f172a !important; color: white !important; text-transform: uppercase; }
+                .grid-2 { display: flex; gap: 15px; margin-bottom: 15px; }
+                .box { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; }
+            </style>
+        </head>
+        <body>
+            <!-- Encabezado corporativo homologado -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f97316; padding-bottom: 12px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="{% static 'img/logo del taller.jpg' %}" style="height: 55px; width: auto; border-radius: 8px;" alt="Logo Taller">
+                    <div>
+                        <h2 style="margin: 0; font-size: 18px; color: #0f172a; text-transform: uppercase; font-weight: 900;">Serviautomotriz Fernández C.A.</h2>
+                        <span style="font-size: 11px; font-weight: bold; color: #f97316; font-family: monospace;">RIF: J-29729665-4</span>
+                    </div>
+                </div>
+                <div style="text-align: right; font-size: 10px; color: #475569;">
+                    <p style="margin: 0;"><strong>Reporte Detallado:</strong> Transacción ${idTransaccion}</p>
+                    <p style="margin: 2px 0 0 0;"><strong>Generado por:</strong> ${usuarioImprimio}</p>
+                    <p style="margin: 2px 0 0 0;"><strong>Fecha:</strong> ${fechaGeneracion}</p>
+                </div>
+            </div>
+
+            <!-- Contenido del Modal Organizado -->
+            <div style="margin-bottom: 15px; background: #f1f5f9; padding: 12px; border-radius: 8px;">
+                <p style="margin: 4px 0;"><strong>Estado:</strong> ${estado}</p>
+                <p style="margin: 4px 0;"><strong>Fecha y Hora:</strong> ${fecha}</p>
+                <p style="margin: 4px 0;"><strong>Descripción:</strong> ${descripcion}</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="box" style="background: #fff7ed; border-color: #fed7aa;">
+                    <strong>Monto Total a Pagar:</strong><br>
+                    <span style="font-size: 16px; font-weight: bold; color: #9a3412;">${montoPagar}</span>
+                </div>
+                <div class="box" style="background: #ecfdf5; border-color: #a7f3d0;">
+                    <strong>Monto Total Recibido:</strong><br>
+                    <span style="font-size: 16px; font-weight: bold; color: #065f46;">${montoRecibido}</span>
+                </div>
+            </div>
+
+            ${htmlFactura}
+
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 12px; font-weight: 900; text-transform: uppercase; border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 8px;">Desglose de Método(s) de Pago</h4>
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Método de Pago</th>
+                            <th>Monto en Línea</th>
+                            <th>Ref. Pasarela</th>
+                            <th>Banco Origen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filasPagosHtml}
+                    </tbody>
+                </table>
+            </div>
+        </body>
+        </html>
+    `);
+
+    ventanaImpresion.document.close();
+
+    setTimeout(() => {
+        ventanaImpresion.focus();
+        ventanaImpresion.print();
+        ventanaImpresion.close();
+    }, 400);
+}
+</script>
+{% endblock %}

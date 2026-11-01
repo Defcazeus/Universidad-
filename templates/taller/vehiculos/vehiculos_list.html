@@ -1,0 +1,491 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vehículos | Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+<div id="usuario-sesion" data-username="{{ usuario_nombre }}" class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+
+  <!-- HEADER MODULAR -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Parque Automotor</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Gestión de Vehículos</h1>
+      <p class="text-xs text-slate-400 font-medium">Control de unidades, ficha técnica e historial de mantenimiento</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        onclick="openModal('modalCrear')"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+        <span>Ingresar Vehículo</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+
+
+  <!-- BARRA DE FILTROS Y BÚSQUEDA -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+    <div>
+      <h2 class="text-base font-extrabold text-slate-900 uppercase tracking-tight">Vehículos Registrados</h2>
+      <p class="text-xs text-slate-500 font-medium">Listado general de unidades registradas y propietarios asociados</p>
+    </div>
+
+    <!-- BUSCADOR CON DESPLEGABLE DE CRITERIO -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-xl">
+      <div class="flex items-center bg-slate-100 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-orange-500 transition-all w-full">
+        <span class="px-3 text-[11px] font-black uppercase tracking-wider text-slate-600 bg-slate-200/60 border-r border-slate-200 py-2.5 shrink-0">
+          Filtro
+        </span>
+        <select id="selectCategoriaBusqueda" class="px-3 py-2 bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer border-r border-slate-200 shrink-0">
+          <option value="global" selected>Todo</option>
+          <option value="0">ID</option>
+          <option value="1">Concepto / Servicio</option>
+          <option value="2">Duración Est.</option>
+          <option value="4">Estado</option>
+        </select>
+        <div class="relative w-full flex items-center">
+          <input
+            type="text"
+            id="inputBusquedaCustom"
+            placeholder="Escribe para buscar..."
+            class="w-full pl-3 pr-9 py-2 bg-transparent text-xs text-slate-900 placeholder-slate-400 font-mono outline-none"
+          >
+          <svg class="w-4 h-4 absolute right-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- PANEL PRINCIPAL CON TABLA DATATABLES -->
+  <main class="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+
+    <!-- TABLA DE VEHÍCULOS -->
+    <div class="overflow-x-auto rounded-xl border border-slate-200">
+      <table id="tablaVehiculos" class="w-full text-left border-collapse">
+        <thead class="bg-slate-900 text-white text-[11px] font-black uppercase tracking-wider">
+          <tr>
+            <th class="p-3.5 border-b border-slate-800">Placa</th>
+            <th class="p-3.5 border-b border-slate-800">Marca / Modelo</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Año</th>
+            <th class="p-3.5 border-b border-slate-800">Propietario / Cliente</th>
+            <th class="p-3.5 border-b border-slate-800 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-xs font-medium">
+          {% for vehiculo in vehiculos %}
+            <tr class="hover:bg-slate-50/80 transition-colors">
+
+              <!-- PLACA -->
+              <td class="p-3.5">
+                <span class="px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-[11px] font-bold rounded-lg border border-slate-800 uppercase tracking-wider">
+                  {{ vehiculo.placa }}
+                </span>
+              </td>
+
+              <!-- MARCA / MODELO -->
+              <td class="p-3.5 font-bold text-slate-900 uppercase">
+                {{ vehiculo.marca }} <span class="text-slate-500 font-medium">{{ vehiculo.modelo }}</span>
+              </td>
+
+              <!-- AÑO -->
+              <td class="p-3.5 text-center">
+                <span class="inline-flex items-center font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                  {{ vehiculo.anno }}
+                </span>
+              </td>
+
+              <!-- PROPIETARIO -->
+              <td class="p-3.5">
+                <div class="flex flex-col">
+                  <span class="font-bold text-slate-800 uppercase">
+                    {{ vehiculo.cedula_usuario.first_name }} {{ vehiculo.cedula_usuario.last_name }}
+                  </span>
+                  <span class="font-mono text-slate-500 text-[11px]">
+                    C.I.: {{ vehiculo.cedula_usuario.cedula_usuario }}
+                  </span>
+                </div>
+              </td>
+
+              <!-- ACCIONES -->
+              <td class="p-3.5 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <!-- HISTORIAL -->
+                  <a
+                    href="{% url 'historial_vehiculo_detalle' vehiculo.placa %}"
+                    class="p-2 hover:bg-slate-100 text-slate-600 hover:text-orange-600 rounded-lg border border-transparent transition"
+                    title="Ver Historial de Mantenimiento"
+                  >
+                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  </a>
+
+                  <!-- VER DETALLE -->
+                  <button
+                    type="button"
+                    onclick="verVehiculo('{{ vehiculo.placa }}')"
+                    class="p-2 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-lg border border-transparent transition"
+                    title="Ver Ficha Técnica"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+
+                  <!-- EDITAR -->
+                  <button
+                    type="button"
+                    onclick="editarVehiculo('{{ vehiculo.placa }}')"
+                    class="p-2 hover:bg-orange-50 text-slate-600 hover:text-orange-600 rounded-lg border border-transparent transition"
+                    title="Editar Vehículo"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="py-16 text-center bg-white">
+                <div class="max-w-xs mx-auto space-y-2">
+                  <svg class="w-12 h-12 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h8m-8 4h8m-8 4h4m5 4H7a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2z"/></svg>
+                  <p class="text-xs font-bold text-slate-700 uppercase">No hay vehículos registrados</p>
+                  <p class="text-xs text-slate-400">Utiliza el botón "Ingresar Vehículo" para dar de alta unidades en el sistema.</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- MODAL CREAR -->
+<div id="modalCrear" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Ingreso de Vehículo</h3>
+      </div>
+      <button onclick="closeModal('modalCrear')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'vehiculo_crear' %}" class="p-6 space-y-4">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Placa <span class="text-red-600">*</span></label>
+          <input type="text" name="placa" value="{{ request.POST.placa|default:'' }}" required minlength="6" maxlength="7" placeholder="ABC123X" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 uppercase placeholder-slate-400 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Año <span class="text-red-600">*</span></label>
+          <input type="number" name="anno" value="{{ request.POST.anno|default:'' }}" required min="1950" max="2030" placeholder="2020" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Marca <span class="text-red-600">*</span></label>
+          <input type="text" name="marca" value="{{ request.POST.marca|default:'' }}" required placeholder="Toyota" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Modelo <span class="text-red-600">*</span></label>
+          <input type="text" name="modelo" value="{{ request.POST.modelo|default:'' }}" required placeholder="Corolla" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Cliente / Propietario <span class="text-red-600">*</span></label>
+        <select name="cedula_usuario" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+          <option value="" disabled selected>-- Seleccione Cliente --</option>
+          {% for cliente in clientes %}
+            <option value="{{ cliente.cedula_usuario }}">{{ cliente.cedula_usuario }} - {{ cliente.nombre }} {{ cliente.apellido }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Observaciones / Detalles Técnicos</label>
+        <textarea name="descripcion" rows="2" placeholder="Detalles de carrocería, estado general..." class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white resize-none">{{ request.POST.descripcion|default:'' }}</textarea>
+      </div>
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('modalCrear')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white transition">Guardar Vehículo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modalEditar" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Editar Ficha de Vehículo</h3>
+      </div>
+      <button onclick="closeModal('modalEditar')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <form id="formEditar" method="POST" class="p-6 space-y-4">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Placa (Bloqueada)</label>
+          <input type="text" id="edit_placa_dis" disabled class="w-full px-3 py-2 bg-slate-200 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-600 uppercase">
+          <input type="hidden" name="placa" id="hidden_placa">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Año <span class="text-red-600">*</span></label>
+          <input type="number" name="anno" id="edit_anno" required min="1950" max="2030" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Marca <span class="text-red-600">*</span></label>
+          <input type="text" name="marca" id="edit_marca" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Modelo <span class="text-red-600">*</span></label>
+          <input type="text" name="modelo" id="edit_modelo" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
+          Propietario / Cliente (Bloqueado)
+        </label>
+        <input
+          type="text"
+          id="edit_propietario_nombre"
+          disabled
+          class="w-full px-3 py-2 bg-slate-200 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-600 outline-none cursor-not-allowed uppercase"
+          placeholder="Cargando propietario..."
+        >
+        <input type="hidden" name="cedula_usuario" id="hidden_cedula_usuario">
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Observaciones / Detalles</label>
+        <textarea name="descripcion" id="edit_descripcion" rows="2" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white resize-none"></textarea>
+      </div>
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('modalEditar')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-900 hover:bg-black text-white transition">Aplicar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL VER DETALLE -->
+<div id="modalVer" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border-4 border-slate-900 overflow-hidden p-6 space-y-4">
+    <div class="flex justify-between items-start border-b-2 border-slate-100 pb-3">
+      <div>
+        <span class="inline-block px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-xs font-black rounded-md mb-2 uppercase" id="view_placa">---</span>
+        <h3 id="view_vehiculo" class="text-lg font-black uppercase text-slate-900">---</h3>
+      </div>
+      <button onclick="closeModal('modalVer')" class="text-slate-400 hover:text-slate-900 font-mono text-xl">&times;</button>
+    </div>
+
+    <div class="space-y-3 text-xs">
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Año del Vehículo</span>
+        <p id="view_anno" class="font-mono text-slate-900 font-bold text-sm">---</p>
+      </div>
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Propietario Asociado</span>
+        <p id="view_propietario" class="text-slate-800 font-bold uppercase">---</p>
+      </div>
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalles / Observaciones</span>
+        <p id="view_descripcion" class="text-slate-800 font-medium">---</p>
+      </div>
+    </div>
+
+    <button onclick="closeModal('modalVer')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider rounded-xl transition">Cerrar Ficha</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Librerías de pdfmake para exportar a PDF personalizado -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  $.fn.dataTable.ext.errMode = 'none';
+
+  // Obtener de forma segura el usuario desde el DOM
+  const usuarioImprimio = document.getElementById('usuario-sesion')?.getAttribute('data-username') || 'Administrador';
+  const fechaGeneracion = new Date().toLocaleString('es-VE');
+
+  $(document).ready(function() {
+      let table = null;
+
+      if ($('#tablaVehiculos tbody tr').length > 0 || $('#tablaClientes tbody tr').length > 0) {
+        // Detecta automáticamente qué tabla está presente en la vista actual
+        const tablaId = $('#tablaVehiculos').length ? '#tablaVehiculos' : '#tablaClientes';
+
+        table = $(tablaId).DataTable({
+            "order": [[1, 'asc']],
+            // DOM universal y seguro para mantener los botones abajo a la derecha sin que desaparezcan
+            "dom": 'rt<"d-flex justify-content-between align-items-center mt-3"<"text-xs text-muted"i><"p-0"B>>p',
+            "buttons": [
+                {
+                    extend: 'print',
+                    text: 'Imprimir',
+                    className: 'btn btn-sm btn-dark text-xs font-weight-bold me-1',
+                    title: '',
+                    exportOptions: { columns: ':not(:last-child)' }, // Excluye automáticamente la última columna (Acciones)
+                    customize: function (win) {
+                        var css = '@media print { table, th, td { border: 1px solid #94a3b8 !important; border-collapse: collapse !important; padding: 8px !important; } }',
+                            head = win.document.head || win.document.getElementsByTagName('head')[0],
+                            style = win.document.createElement('style');
+
+                        style.type = 'text/css';
+                        style.appendChild(win.document.createTextNode(css));
+                        head.appendChild(style);
+                    },
+                    messageTop: `
+                      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f97316; padding-bottom: 12px; margin-bottom: 20px; font-family: sans-serif;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <img src="{% static 'img/logo del taller.jpg' %}" style="height: 60px; width: auto; border-radius: 8px;" alt="Logo Taller">
+                          <div>
+                            <h2 style="margin: 0; font-size: 20px; color: #0f172a; text-transform: uppercase; font-weight: 900;">Serviautomotriz Fernández C.A.</h2>
+                            <span style="font-size: 11px; font-weight: bold; color: #f97316; font-family: monospace;">RIF: J-29729665-4</span>
+                          </div>
+                        </div>
+                        <div style="text-align: right; font-size: 10px; color: #475569;">
+                          <p style="margin: 0;"><strong>Reporte Oficial del Sistema</strong></p>
+                          <p style="margin: 2px 0 0 0;"><strong>Generado por:</strong> ${usuarioImprimio}</p>
+                          <p style="margin: 2px 0 0 0;"><strong>Fecha:</strong> ${fechaGeneracion}</p>
+                        </div>
+                      </div>
+                    `
+                },
+                {
+                    extend: 'excel',
+                    text: 'Exportar a Excel',
+                    className: 'btn btn-sm btn-success text-xs font-weight-bold me-1',
+                    exportOptions: { columns: ':not(:last-child)' }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    text: 'Exportar a PDF',
+                    className: 'btn btn-sm btn-danger text-xs font-weight-bold',
+                    orientation: 'portrait',
+                    pageSize: 'LETTER',
+                    exportOptions: { columns: ':not(:last-child)' },
+                    customize: function(doc) {
+                        doc.defaultStyle.fontSize = 8;
+                        doc.styles.tableHeader.fontSize = 9;
+                        doc.styles.tableHeader.fillColor = '#0f172a';
+                        doc.styles.tableHeader.color = '#ffffff';
+                        doc.styles.tableHeader.bold = true;
+
+                        // Celdas cuadriculadas automáticas para el PDF
+                        doc.content[1].table.body.forEach(function(row) {
+                            row.forEach(function(cell) {
+                                cell.borderColor = ['#cbd5e1', '#cbd5e1', '#cbd5e1', '#cbd5e1'];
+                            });
+                        });
+
+                        // Encabezado idéntico al de impresión
+                        doc.content.splice(0, 0, {
+                            margin: [0, 0, 0, 15],
+                            columns: [
+                                {
+                                    width: '*',
+                                    text: [
+                                        { text: 'SERVIAUTOMOTRIZ FERNÁNDEZ C.A.\n', fontSize: 13, bold: true, color: '#0f172a' },
+                                        { text: 'RIF: J-29729665-4\n', fontSize: 9, bold: true, color: '#f97316' },
+                                        { text: 'Reporte Oficial del Sistema SICOVEN', fontSize: 10, italics: true, color: '#64748b' }
+                                    ]
+                                },
+                                {
+                                    width: 'auto',
+                                    alignment: 'right',
+                                    text: [
+                                        { text: 'Generado por: ', bold: true, fontSize: 8 },
+                                        { text: `${usuarioImprimio}\n`, fontSize: 8 },
+                                        { text: 'Fecha: ', bold: true, fontSize: 8 },
+                                        { text: `${fechaGeneracion}`, fontSize: 8 }
+                                    ]
+                                }
+                            ]
+                        });
+
+                        doc['footer'] = function(page, pages) {
+                            return {
+                                columns: [
+                                    {
+                                        alignment: 'left',
+                                        text: ' SICOVEN - Serviautomotriz Fernández | RIF: J-29729665-4',
+                                        fontSize: 7,
+                                        color: '#94a3b8',
+                                        margin: [20, 0]
+                                    },
+                                    {
+                                        alignment: 'right',
+                                        text: ['Página ', { text: page.toString() }, ' de ', { text: pages.toString() }],
+                                        fontSize: 7,
+                                        color: '#94a3b8',
+                                        margin: [0, 0, 20, 0]
+                                    }
+                                ]
+                            };
+                        };
+                    }
+                }
+            ],
+            "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" }
+        });
+      }
+  });
+
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+  function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value; }
+
+  {% if abrir_modal_crear %} openModal('modalCrear'); {% endif %}
+</script>
+<script src="{% static 'js/validaciones.js' %}"></script>
+
+{% endblock %}

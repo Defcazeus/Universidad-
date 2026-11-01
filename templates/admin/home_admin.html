@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Serviautomotriz Fernández - Panel de Administración{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* TOPBAR INTERNA */
+    .taller-topbar-interna {
+        background: #fff;
+        border-bottom: 1px solid #e3e6f0;
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: -1rem;
+        margin-bottom: 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+    }
+    .taller-fecha-hora {
+        display: flex;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: #6e707e;
+        font-weight: 600;
+    }
+    .taller-fecha-hora i { color: var(--naranja, #ff6600); }
+
+    /* BIENVENIDA COMPACTA */
+    .taller-welcome {
+        background: #ffffff;
+        padding: 20px 24px;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        margin-bottom: 25px;
+        border-left: 5px solid var(--oscuro, #222);
+    }
+    .taller-welcome h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--oscuro, #222);
+        margin: 0;
+    }
+    .taller-welcome p { color: #858796; margin-top: 2px; margin-bottom: 0; font-size: 0.9rem; }
+
+    /* GRIDS Y METRICAS */
+    .dashboard-grid-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    .metric-box {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        border-left: 4px solid #dddfeb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .metric-box.border-warning { border-left-color: #f6c23e !important; }
+    .metric-box.border-primary { border-left-color: #4e73df !important; }
+    .metric-box.border-danger { border-left-color: #e74a3b !important; }
+    .metric-box.border-success { border-left-color: #1cc88a !important; }
+
+    .metric-title {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #858796;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 3px;
+    }
+    .metric-value { font-size: 1.6rem; font-weight: 800; color: #4e4f5a; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="taller-topbar-interna">
+    <div class="taller-fecha-hora">
+        <span id="fechaActual"><i class="fas fa-calendar-alt me-2"></i>Fecha: --/--/----</span>
+        <span id="horaActual"><i class="fas fa-clock me-2"></i>Hora: --:--:--</span>
+    </div>
+    <div class="taller-usuario-info">
+        <span><i class="bi bi-shield-lock-fill me-1 text-secondary"></i> Operador: <strong style="color: var(--naranja, #ff6600);">{{ request.user.username|default:"ADMIN" }}</strong></span>
+    </div>
+</div>
+
+<section class="taller-welcome">
+    <h1>Serviautomotriz Fernández</h1>
+    <p>Panel Central de Control Operativo. Gestión integrada de fosa, inventario de repuestos y flujo de caja.</p>
+</section>
+
+<div class="card border-0 p-4 bg-white shadow-lg" style="border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
+    <h5 class="mb-3 font-monospace text-muted" style="font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px;">
+        <i class="bi bi-grid-3x3-gap-fill me-1"></i> ESTADÍSTICAS E INDICADORES CLAVE
+    </h5>
+
+    <div class="dashboard-grid-metrics mb-4">
+        <!-- Citas Pendientes -->
+        <div class="metric-box border-warning">
+            <div>
+                <div class="metric-title">Citas Pendientes</div>
+                <div class="metric-value font-monospace">{{ total_citas_pendientes|default:"0" }}</div>
+            </div>
+            <div class="fs-3 text-warning opacity-50"><i class="bi bi-calendar-event"></i></div>
+        </div>
+
+        <!-- En Fosa Operativa -->
+        <div class="metric-box border-primary">
+            <div>
+                <div class="metric-title">En Fosa Operativa</div>
+                <div class="metric-value font-monospace">{{ total_ordenes_activas|default:"0" }}</div>
+            </div>
+            <div class="fs-3 text-primary opacity-50"><i class="bi bi-tools"></i></div>
+        </div>
+
+        <!-- Stock Crítico -->
+        <div class="metric-box border-danger">
+            <div>
+                <div class="metric-title">Stock Crítico</div>
+                <div class="metric-value font-monospace text-danger">{{ stock_bajo_alertas|default:"0" }}</div>
+            </div>
+            <div class="fs-3 text-danger opacity-50"><i class="bi bi-exclamation-octagon"></i></div>
+        </div>
+
+        <!-- Caja del Mes -->
+        <div class="metric-box border-success">
+            <div>
+                <div class="metric-title">Caja del Mes</div>
+                <div class="metric-value font-monospace text-success">${{ ingresos_mes|default:"0.00" }}</div>
+            </div>
+            <div class="fs-3 text-success opacity-50"><i class="bi bi-cash-stack"></i></div>
+        </div>
+    </div>
+
+    <!-- Distribución de Carga en Taller -->
+    <div class="card border-0 p-4 bg-white shadow-sm mb-4" style="border-radius: 16px;">
+        <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+            <i class="bi bi-activity text-warning"></i> Distribución de Carga en Taller
+        </h6>
+        <div class="row text-center g-2">
+            <div class="col-4 border-end">
+                <div class="text-muted small">Esperando Insumos</div>
+                <div class="fs-4 fw-bold text-secondary font-monospace">{{ ordenes_esperando_insumos|default:"0" }}</div>
+            </div>
+            <div class="col-4 border-end">
+                <div class="text-muted small">En Reparación</div>
+                <div class="fs-4 fw-bold text-warning font-monospace">{{ ordenes_en_reparacion|default:"0" }}</div>
+            </div>
+            <div class="col-4">
+                <div class="text-muted small">Listos para Entrega</div>
+                <div class="fs-4 fw-bold text-success font-monospace">{{ ordenes_listos|default:"0" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        function actualizarFechaHora() {
+            const ahora = new Date();
+            const opcionesFecha = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            const fechaTexto = ahora.toLocaleDateString('es-VE', opcionesFecha);
+            const horaTexto = ahora.toLocaleTimeString('es-VE', { hour12: false });
+
+            const fElem = document.getElementById('fechaActual');
+            const hElem = document.getElementById('horaActual');
+            if(fElem) fElem.innerHTML = `<i class="fas fa-calendar-alt me-2"></i>Fecha: ${fechaTexto}`;
+            if(hElem) hElem.innerHTML = `<i class="fas fa-clock me-2"></i>Hora: ${horaTexto}`;
+        }
+        actualizarFechaHora();
+        setInterval(actualizarFechaHora, 1000);
+    });
+</script>
+{% endblock %}

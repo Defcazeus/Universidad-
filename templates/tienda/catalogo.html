@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Serviautomotriz Fernandez — Resultados de Búsqueda{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/compra_venta/style_venta_repuesto.css' %}" />
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet" />
+<style>
+    body {
+        background-color: transparent !important;
+    }
+    .main-header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    .img-producto-tienda {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+        gap: 25px;
+        width: 100%;
+    }
+    section {
+        padding: 80px 20px;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+<nav class="main-header" id="header-tienda">
+    <div class="container header-container">
+        <div class="logo-container">
+            <ul class="nav-logo">
+                <li>
+                    <a href="{% url 'home' %}" style="display: flex; align-items: center; text-transform: none; padding: 0;">
+                        <img src="{% static 'img/logo del taller.jpg' %}" alt="Logo"> 
+                        <span style="margin-left: 10px; font-weight: 800; color: var(--oscuro); letter-spacing: 1px;">FERNÁNDEZ</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="search-box-container">
+            <form action="{% url 'inicio_tienda' %}" method="GET" class="search-form">
+                <div class="search-dropdown">
+                    <span>Todos</span>
+                    <svg viewBox="0 0 24 24" width="12" height="12">
+                        <path d="M7 10l5 5 5-5z" fill="#FFF" />
+                    </svg>
+                </div>
+                <input type="text" name="q" class="search-input" placeholder="Buscar un producto" value="{{ query|default:'' }}" />
+                <button type="submit" class="search-submit-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="#555" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <div class="header-actions">
+            <div class="action-item account-dropdown">
+                <div class="action-text">
+                    <span class="action-title">Mi Cuenta</span>
+                    {% if user.is_authenticated %}
+                      <!-- Caso: Usuario Autenticado -->
+                      <div class="profile-dropdown-container">
+                        <button id="profileDropdownBtn" class="btn-login" aria-haspopup="true" aria-expanded="false" style="color: var(--oscuro);">
+                          <i class="bi bi-person-circle"></i> {{ user.nombre|default:"Perfil" }}
+                          <i class="bi bi-chevron-down arrow-icon"></i>
+                        </button>
+                  
+                        <!-- Caja del Menú Desplegable -->
+                        <div id="profileDropdownMenu" class="profile-dropdown-menu">
+                          <div class="dropdown-header">
+                            <span class="user-name">{{ user.nombre }}</span>
+                            <span class="user-role">
+                                {{ user.is_staff|yesno:"Administrador,Usuario" }}
+                            </span>
+                          </div>
+                          
+                          <div class="dropdown-divider"></div>
+                  
+                          <!-- Enlaces según Rol -->
+                          {% if user.is_staff %}
+                            <a href="{% url 'home_admin' %}" class="dropdown-item">
+                              <i class="bi bi-layout-text-window-reverse"></i> Panel Admin
+                            </a>
+                          {% else %}
+                            <a href="{% url 'home_user' %}" class="dropdown-item">
+                              <i class="bi bi-speedometer2"></i> Mi Panel
+                            </a>
+                          {% endif %}
+                  
+                          <a href="#" class="dropdown-item">
+                            <i class="bi bi-person-gear"></i> Configuración
+                          </a>
+                          <a href="#" class="dropdown-item">
+                            <i class="bi bi-question-circle"></i> Ayuda y Soporte
+                          </a>
+                  
+                          <div class="dropdown-divider"></div>
+                  
+                          <!-- Formulario POST para Logout -->
+                          <form action="{% url 'logout' %}" method="post" id="logoutForm" style="margin: 0; padding: 0;">
+                            {% csrf_token %}
+                            <button type="submit" id="logoutBtn" class="dropdown-item text-danger">
+                              <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    {% else %}
+                      <a href="{% url 'login' %}" class="btn-login">Ingresar</a>
+                    {% endif %}
+                </div>
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                    <path d="M7 10l5 5 5-5z" fill="#777" />
+                </svg>
+            </div>
+
+            <div class="action-item-vertical">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.5 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="var(--oscuro)" stroke-width="2" />
+                </svg>
+                <span class="action-label">FAVORITOS</span>
+            </div>
+
+            <a href="{% url 'ver_carrito' %}" class="action-item-vertical cart-item" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; align-items: center;">
+                <div class="icon-badge-container">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" fill="var(--oscuro)" />
+                    </svg>
+                    <span class="cart-badge">{{ cart_count|default:0 }}</span>
+                </div>
+                <span class="action-label">CARRITO</span>
+            </a>
+        </div>
+    </div>
+</nav>
+{% endblock header %}
+
+{% block content %}
+    <nav class="categories-nav">
+        <div class="container nav-container">
+            <div class="nav-item"><a href="#" class="nav-link">Todos</a></div>
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link active-orange">Promociones <span class="nav-flecha">▼</span></a>
+                <ul class="nav-dropdown-menu">
+                    <li><a href="#">Ofertas del Día</a></li>
+                    <li><a href="#">Liquidación</a></li>
+                </ul>
+            </div>
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link">Mantenimiento <span class="nav-flecha">▼</span></a>
+                <ul class="nav-dropdown-menu">
+                    <li><a href="#">Aceites</a></li>
+                    <li><a href="#">Filtros</a></li>
+                    <li><a href="#">Bujías</a></li>
+                </ul>
+            </div>
+            <div class="nav-item"><a href="#" class="nav-link">Exterior</a></div>
+            <div class="nav-item"><a href="#" class="nav-link">Motor</a></div>
+            <div class="nav-item"><a href="#" class="nav-link">Tren Motriz</a></div>
+            <div class="nav-item"><a href="#" class="nav-link">Eléctricas</a></div>
+            <div class="nav-item"><a href="#" class="nav-link">Refrigeración</a></div>
+            <div class="nav-item"><a href="#" class="nav-link">Interior</a></div>
+        </div>
+    </nav>
+
+    <div class="breadcrumbs-bar">
+        <div class="container">
+            <span class="breadcrumb-item">Inicio</span>
+            <span class="breadcrumb-separator">&gt;</span>
+            <span class="breadcrumb-item active">Buscar</span>
+        </div>
+    </div>
+
+    <main class="main-content container">
+        <div class="layout-grid">
+            <div class="menu-categorias">
+                <div class="categoria-item"><button class="btn-desplegar">Todos</button></div>
+                <div class="categoria-item"><button class="btn-desplegar">Promociones</button></div>
+                <div class="categoria-item"><button class="btn-desplegar">Mantenimiento</button></div>
+                <div class="categoria-item"><button class="btn-desplegar">Exterior</button></div>
+                
+                <div class="categoria-item">
+                    <button class="btn-desplegar">Motor <span class="flecha">▶</span></button>
+                    <ul class="subcategorias">
+                        <li><a href="#">Bombas</a></li>
+                        <li><a href="#">Componentes</a></li>
+                        <li><a href="#">Distribución</a></li>
+                        <li><a href="#">Inyectores</a></li>
+                        <li><a href="#">Motor Y Partes</a></li>
+                        <li><a href="#">Reservorios</a></li>
+                        <li><a href="#">Soportes Y Bases</a></li>
+                        <li><a href="#">Termostatos</a></li>
+                    </ul>
+                </div>
+                <div class="categoria-item">
+                    <button class="btn-desplegar">Tren Motriz <span class="flecha">▶</span></button>
+                    <ul class="subcategorias">
+                        <li><a href="#">Cajas de Cambio</a></li>
+                        <li><a href="#">Trípodes</a></li>
+                        <li><a href="#">Cardanes</a></li>
+                    </ul>
+                </div>
+                <div class="categoria-item">
+                    <button class="btn-desplegar">Eléctricas <span class="flecha">▶</span></button>
+                    <ul class="subcategorias">
+                        <li><a href="#">Alternadores</a></li>
+                        <li><a href="#">Arranques</a></li>
+                        <li><a href="#">Fusibles</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <section class="products-section">
+                <div class="results-tabs">
+                    <button class="tab-btn active">Productos ({{ productos|length }})</button>                  <button class="tab-btn">Noticias e Información (0)</button>
+                </div>
+
+                <div class="display-controls-bar">
+                    <div class="control-item">
+                        <label>MOSTRAR:</label>
+                        <select class="control-select">
+                            <option value="15">15 Productos por Página</option>
+                            <option value="30">30 Productos por Página</option>
+                            <option value="50">50 Productos por Página</option>
+                        </select>
+                    </div>
+                    <div class="control-item">
+                        <label>ORDENAR POR:</label>
+                        <select class="control-select">
+                            <option value="relevancia">Relevancia</option>
+                            <option value="precio_bajo">Menor Precio</option>
+                            <option value="precio_alto">Mayor Precio</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="products-grid">
+                    {% for producto in productos %}
+                        <div class="product-card">
+                            <div class="product-image-placeholder" style="display: flex; align-items: center; justify-content: center;">
+                                {% if producto.imagen_url %}
+                                    <img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" class="img-producto-tienda">
+                                {% else %}
+                                    <span style="font-size: 11px; color: #aaa; font-weight: 600;">SIN IMAGEN</span>
+                                {% endif %}
+                            </div>
+                            <div class="product-info">
+                                <div>
+                                    <span class="product-brand">{{ producto.id_cat_producto.nombre|default:"General" }}</span>
+                                    <h3 class="product-title">{{ producto.nombre }}</h3>
+                                </div>
+                                <div class="price-box" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span class="current-price" style="font-weight: 800; color: var(--oscuro); margin: 0;">Ref. {{ producto.precio_venta }}</span>
+                                        <small class="text-muted" style="font-size: 10px;">Stock: {{ producto.stock_disponible }}</small>
+                                    </div>
+                                    {% if producto.stock_disponible > 0 %}
+                                        <form action="{% url 'agregar_al_carrito' producto.pk %}" method="POST" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 0; padding: 0; box-shadow: none; background: transparent; width: 100%;">
+                                            {% csrf_token %}
+                                            <div style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; background: #fff; height: 32px;">
+                                                <button type="button" class="btn-qty-minus" onclick="decrementQty(this)" style="background: none; border: none; padding: 0 10px; font-weight: bold; cursor: pointer; color: var(--oscuro); height: 100%; font-size: 14px;">-</button>
+                                                <input type="number" name="cantidad" value="1" min="1" max="{{ producto.stock_disponible }}" style="width: 38px; border: none; text-align: center; font-size: 11px; font-weight: 700; height: 100%; padding: 0; outline: none; margin: 0;" />
+                                                <button type="button" class="btn-qty-plus" onclick="incrementQty(this, {{ producto.stock_disponible }})" style="background: none; border: none; padding: 0 10px; font-weight: bold; cursor: pointer; color: var(--oscuro); height: 100%; font-size: 14px;">+</button>
+                                            </div>
+                                            <button type="submit" class="btn-add-to-cart" style="background: var(--naranja, #ff5722); color: #fff; border: none; padding: 0 16px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.3s ease; margin: 0; flex: 1;">
+                                                Añadir
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span style="background: #dc3545; color: #fff; font-size: 10px; font-weight: 700; padding: 6px 12px; border-radius: 4px; text-align: center; width: 100%; display: block;">Agotado</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="no-products" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+                            No se encontraron productos que coincidan con la búsqueda.
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function decrementQty(button) {
+        const input = button.parentElement.querySelector('input[name="cantidad"]');
+        let value = parseInt(input.value) || 1;
+        if (value > 1) {
+            input.value = value - 1;
+        }
+    }
+    
+    function incrementQty(button, maxStock) {
+        const input = button.parentElement.querySelector('input[name="cantidad"]');
+        let value = parseInt(input.value) || 1;
+        if (value < maxStock) {
+            input.value = value + 1;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const botonesMenu = document.querySelectorAll(".btn-desplegar");
+        botonesMenu.forEach((boton) => {
+            boton.addEventListener("click", function () {
+                const padre = this.parentElement;
+                const subcategoria = padre.querySelector(".subcategorias");
+                if (subcategoria) {
+                    padre.classList.toggle("open");
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

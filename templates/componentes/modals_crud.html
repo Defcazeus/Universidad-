@@ -1,0 +1,114 @@
+<!-- MODAL CREAR REGISTRO -->
+<div id="{{ id_modal_crear|default:'modalNuevoRegistro' }}" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">{{ titulo_crear|default:'Nuevo Registro' }}</h3>
+      </div>
+      <button type="button" onclick="closeModal('{{ id_modal_crear|default:'modalNuevoRegistro' }}')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <form method="POST" action="{{ action_crear }}" class="p-6 space-y-4">
+      {% csrf_token %}
+      {% for campo in campos_modal %}
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
+            {{ campo.label }} {% if campo.required %}<span class="text-red-600">*</span>{% endif %}
+          </label>
+          
+          {% if campo.tipo == 'select' %}
+            <select name="{{ campo.name }}" id="create_{{ campo.name }}" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white" {% if campo.required %}required{% endif %}>
+              <option value="" disabled selected>{{ campo.placeholder }}</option>
+              {% for opcion in campo.opciones %}
+                <option value="{{ opcion.id }}">{{ opcion.texto }}</option>
+              {% endfor %}
+            </select>
+          
+          {% elif campo.tipo == 'textarea' %}
+            <textarea name="{{ campo.name }}" id="create_{{ campo.name }}" placeholder="{{ campo.placeholder }}" rows="3" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white resize-none" {% if campo.required %}required{% endif %}></textarea>
+          
+          {% else %}
+            <input type="{{ campo.tipo|default:'text' }}" name="{{ campo.name }}" id="create_{{ campo.name }}" placeholder="{{ campo.placeholder|default:'' }}" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white" {% if campo.required %}required{% endif %}>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('{{ id_modal_crear|default:'modalNuevoRegistro' }}')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white transition">Guardar Registro</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EDITAR REGISTRO -->
+<div id="{{ id_modal_editar|default:'modalEditarRegistro' }}" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">{{ titulo_editar|default:'Editar Registro' }}</h3>
+      </div>
+      <button type="button" onclick="closeModal('{{ id_modal_editar|default:'modalEditarRegistro' }}')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <form method="POST" action="{{ action_editar }}" id="formEditarRegistro" class="p-6 space-y-4">
+      {% csrf_token %}
+      {% for campo in campos_modal %}
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
+            {{ campo.label }} {% if campo.required %}<span class="text-red-600">*</span>{% endif %}
+          </label>
+          
+          {% if campo.tipo == 'select' %}
+            <select name="{{ campo.name }}" id="id_{{ campo.name }}" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-amber-500 focus:bg-white" {% if campo.required %}required{% endif %}>
+              <option value="" disabled selected>{{ campo.placeholder }}</option>
+              {% for opcion in campo.opciones %}
+                <option value="{{ opcion.id }}">{{ opcion.texto }}</option>
+              {% endfor %}
+            </select>
+          
+          {% elif campo.tipo == 'textarea' %}
+            <textarea name="{{ campo.name }}" id="id_{{ campo.name }}" placeholder="{{ campo.placeholder }}" rows="3" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-amber-500 focus:bg-white resize-none" {% if campo.required %}required{% endif %}></textarea>
+          
+          {% else %}
+            <input type="{{ campo.tipo|default:'text' }}" name="{{ campo.name }}" id="id_{{ campo.name }}" placeholder="{{ campo.placeholder|default:'' }}" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-amber-500 focus:bg-white" {% if campo.required %}required{% endif %}>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('{{ id_modal_editar|default:'modalEditarRegistro' }}')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-900 hover:bg-black text-white transition">Actualizar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL VER REGISTRO -->
+<div id="{{ id_modal_ver|default:'modalVerRegistro' }}" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border-4 border-slate-900 overflow-hidden p-6 space-y-4">
+    
+    <div class="flex justify-between items-center border-b-2 border-slate-100 pb-3">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest text-slate-900">{{ titulo_ver|default:'Detalle del Registro' }}</h3>
+      </div>
+      <button type="button" onclick="closeModal('{{ id_modal_ver|default:'modalVerRegistro' }}')" class="text-slate-400 hover:text-slate-900 font-mono text-xl transition">&times;</button>
+    </div>
+
+    <div class="space-y-3">
+      {% for campo in campos_modal %}
+        <div>
+          <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{{ campo.label }}</span>
+          <input type="text" id="view_{{ campo.name }}" readonly class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">
+        </div>
+      {% endfor %}
+    </div>
+
+    <button type="button" onclick="closeModal('{{ id_modal_ver|default:'modalVerRegistro' }}')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider rounded-xl transition">Cerrar Ventana</button>
+  </div>
+</div>

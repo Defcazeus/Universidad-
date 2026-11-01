@@ -1,0 +1,79 @@
+<!-- Modal Detalle e Impresión -->
+<div class="modal fade" id="modalDetallePedido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden" id="sectionToPrint">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <div>
+          <h3 class="text-sm font-black uppercase tracking-widest">Resumen de Orden de Servicio</h3>
+          <p id="detCodigo" class="text-[11px] font-mono text-orange-400"></p>
+        </div>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <p class="text-slate-400 font-bold uppercase">Cliente / Usuario:</p>
+            <p id="detCliente" class="font-black text-slate-900"></p>
+          </div>
+          <div>
+            <p class="text-slate-400 font-bold uppercase">Fecha de Apertura:</p>
+            <p id="detFecha" class="font-mono text-slate-800"></p>
+          </div>
+          <div>
+              <p class="text-slate-400 font-bold uppercase">Referencia:</p>
+              <p id="detRef" class="font-mono text-slate-800"></p>
+
+              
+          </div>
+
+          
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-slate-100 font-black uppercase text-slate-700">
+              <tr>
+                <th class="p-2 border-b">Tipo</th>
+                <th class="p-2 border-b">Descripción</th>
+                <th class="p-2 border-b text-center">Cant.</th>
+                <th class="p-2 border-b text-right">Precio U.</th>
+                <th class="p-2 border-b text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="detTablaItems" class="divide-y divide-slate-100 font-medium"></tbody>
+          </table>
+        </div>
+
+
+        <div class="flex justify-end pt-2">
+          <div class="w-full md:w-64 space-y-1.5 p-4 bg-slate-900 text-white rounded-xl font-mono text-xs">
+            <div class="flex justify-between text-slate-400">
+              <span>Subtotal:</span>
+              <span><span id="detSubtotal">0.00</span></span>
+            </div>
+            <div class="flex justify-between text-slate-400 pb-2 border-b border-slate-800">
+              <span>IVA / Impuesto:</span>
+              <span><span id="detIva">0.00</span></span>
+            </div>
+            <div class="flex justify-between font-extrabold text-sm text-orange-400 pt-1">
+              <span>Total:</span>
+              <span><span id="detTotal">0.00</span></span>
+            </div>
+          </div>
+        </div>
+
+        
+        <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+          <button type="button" onclick="window.print()" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-black">
+            🖨️ Imprimir Hoja de Trabajo
+          </button>
+          <button type="button" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase bg-slate-200 text-slate-700 hover:bg-slate-300 transition" data-bs-dismiss="modal">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+

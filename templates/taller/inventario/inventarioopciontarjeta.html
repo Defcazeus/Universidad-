@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventario de Productos - Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  /* Ocultar completamente los encabezados de la tabla nativa */
+  #tablaInventario thead,
+  #tablaInventario thead tr,
+  #tablaInventario thead th {
+    display: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+  
+  /* Limpiar estilos de filas de DataTables */
+  #tablaInventario tbody tr {
+    background: transparent !important;
+    border: none !important;
+  }
+  #tablaInventario tbody td {
+    padding: 0 !important;
+    border: none !important;
+  }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+
+  <!-- HEADER HOMOLOGADO -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Gestión de Almacén</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Registro de Productos</h1>
+      <p class="text-xs text-slate-400 font-medium">Administra el padrón de repuestos e insumos del taller mecánico desde este panel centralizado.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <button 
+        type="button" 
+        data-bs-toggle="modal" 
+        data-bs-target="#modalNuevaCategoria"
+        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl border border-slate-700 transition-all cursor-pointer"
+      >
+        <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+        <span>Nueva Categoría</span>
+      </button>
+
+      <button 
+        type="button" 
+        data-bs-toggle="modal" 
+        data-bs-target="#modalNuevoProducto"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+        <span>Nuevo Producto</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- PANEL PRINCIPAL CONTENEDOR -->
+  <main class="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+    
+    <!-- BARRA DE FILTROS Y BÚSQUEDA -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div>
+        <h2 class="text-base font-extrabold text-slate-900 uppercase tracking-tight">Productos Registrados</h2>
+        <p class="text-xs text-slate-500 font-medium">Catálogo en vista de tarjetas con control de existencias e inventario kardex</p>
+      </div>
+
+      <!-- BUSCADOR CON DESPLEGABLE DE CRITERIO -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-xl">
+        <div class="flex items-center bg-slate-100 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-orange-500 transition-all w-full">
+          <span class="px-3 text-[11px] font-black uppercase tracking-wider text-slate-600 bg-slate-200/60 border-r border-slate-200 py-2.5 shrink-0">
+            Filtro
+          </span>
+          <select id="selectCategoriaBusqueda" class="px-3 py-2 bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer border-r border-slate-200 shrink-0">
+            <option value="global" selected>Todo</option>
+            <option value="sku">SKU</option>
+            <option value="nombre">Descripción / Repuesto</option>
+            <option value="categoria">Categoría</option>
+          </select>
+          <div class="relative w-full flex items-center">
+            <input 
+              type="text" 
+              id="inputBusquedaCustom" 
+              placeholder="Escribe para buscar..." 
+              class="w-full pl-3 pr-9 py-2 bg-transparent text-xs text-slate-900 placeholder-slate-400 font-mono outline-none"
+            >
+            <svg class="w-4 h-4 absolute right-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATATABLES MAPPED INTO CARDS GRID -->
+    <table id="tablaInventario" class="w-full">
+      <thead class="hidden">
+        <tr>
+          <th>SKU</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Detalle Card</th>
+        </tr>
+      </thead>
+      <tbody class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {% for prod in productos %}
+          <tr id="row-prod-{{ prod.id_producto }}" class="h-full">
+            <!-- Datos ocultos estructurados para filtrado exacto de DataTables -->
+            <td class="hidden">{{ prod.sku }}</td>
+            <td class="hidden">{{ prod.nombre }}</td>
+            <td class="hidden">{% if prod.id_cat_producto %}{{ prod.id_cat_producto.nombre }}{% else %}Sin Categoría{% endif %}</td>
+            
+            <!-- CONTENIDO DE LA CARD -->
+            <td class="block h-full">
+              <div class="bg-white border-2 border-slate-200 hover:border-orange-400 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-full space-y-4">
+                
+                <!-- Card Header: SKU & Catálogo Web Badge -->
+                <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                  <span class="px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-[11px] font-bold rounded-lg border border-slate-800">
+                    SKU: {{ prod.sku }}
+                  </span>
+
+                  <!-- Estatus Visibilidad -->
+                  <button type="button" onclick="toggleEstatus({{ prod.id_producto }})" id="badge-estatus-{{ prod.id_producto }}">
+                    {% if prod.activo %}
+                      <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md border border-emerald-200 uppercase cursor-pointer hover:bg-emerald-200 transition">
+                        <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+                        Visible
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md border border-slate-200 uppercase cursor-pointer hover:bg-slate-200 transition">
+                        <svg class="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.064 7 9.542 7 1.053 0 2.062-.18 3.001-.503z"/></svg>
+                        Oculto
+                      </span>
+                    {% endif %}
+                  </button>
+                </div>
+
+                <!-- Body Card: Detalles -->
+                <div class="space-y-3 flex-1">
+                  <div>
+                    <span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded border border-slate-200 uppercase mb-1">
+                      {% if prod.id_cat_producto %}{{ prod.id_cat_producto.nombre }}{% else %}Sin Categoría{% endif %}
+                    </span>
+                    <h3 class="text-base font-extrabold text-slate-900 leading-snug line-clamp-2" title="{{ prod.nombre }}">
+                      {{ prod.nombre }}
+                    </h3>
+                  </div>
+
+                  <!-- Métricas: Stock & Precio -->
+                  <div class="grid grid-cols-2 gap-2 pt-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div>
+                      <span class="block text-[10px] font-black text-slate-400 uppercase">Stock Actual</span>
+                      {% if prod.stock_actual <= prod.stock_minimo %}
+                        <span class="inline-block px-2 py-0.5 bg-red-100 text-red-800 font-mono text-xs font-black rounded border border-red-200 mt-0.5" id="stock-val-{{ prod.id_producto }}">
+                          {{ prod.stock_actual }} ¡Bajo!
+                        </span>
+                      {% else %}
+                        <span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 font-mono text-xs font-extrabold rounded border border-emerald-200 mt-0.5" id="stock-val-{{ prod.id_producto }}">
+                          {{ prod.stock_actual }} uds
+                        </span>
+                      {% endif %}
+                    </div>
+
+                    <div class="text-right">
+                      <span class="block text-[10px] font-black text-slate-400 uppercase">P. Venta</span>
+                      <span class="font-mono font-black text-slate-900 text-base">
+                        ${{ prod.precio_venta|floatformat:2 }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Footer Card: Acciones Directas -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button 
+                    type="button"
+                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 rounded-xl font-bold text-xs border border-slate-200 hover:border-emerald-200 transition"
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalAjusteStock" 
+                    data-id="{{ prod.id_producto }}" 
+                    data-nombre="{{ prod.nombre }}"
+                    title="Registrar Entrada/Salida Manual"
+                  >
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    <span>Movimiento</span>
+                  </button>
+                  
+                  <button 
+                    type="button"
+                    onclick="abrirModalEditar({{ prod.id_producto }})"
+                    class="p-2 bg-slate-100 hover:bg-orange-50 text-slate-700 hover:text-orange-600 rounded-xl border border-slate-200 hover:border-orange-200 transition" 
+                    title="Editar Repuesto"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                </div>
+
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="py-16 text-center bg-white">
+              <div class="max-w-xs mx-auto space-y-2">
+                <svg class="w-12 h-12 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <p class="text-xs font-bold text-slate-700 uppercase">El inventario se encuentra vacío</p>
+                <p class="text-xs text-slate-400">Usa el botón "Nuevo Producto" en la parte superior para añadir stock.</p>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </main>
+</div>
+
+<!-- MODAL CREAR CATEGORÍA -->
+<div class="modal fade" id="modalNuevaCategoria" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <h3 class="text-sm font-black uppercase tracking-widest">Agregar Nueva Categoría</h3>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+      <form id="formCrearCategoria" class="p-6 space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase mb-1">Nombre de Categoría <span class="text-red-600">*</span></label>
+          {{ form_categoria.nombre }}
+        </div>
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+          <button type="button" data-bs-dismiss="modal" class="px-4 py-2 text-xs font-bold text-slate-700">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase bg-orange-500 text-white hover:bg-orange-600">Guardar Categoría</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREAR PRODUCTO -->
+<div class="modal fade" id="modalNuevoProducto" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <h3 class="text-sm font-black uppercase tracking-widest">Nuevo Repuesto / Insumo</h3>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+      <form id="formCrearProducto" class="p-6 space-y-4">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">SKU / Código <span class="text-red-600">*</span></label>
+            {{ form_producto.sku }}
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Nombre del Repuesto <span class="text-red-600">*</span></label>
+            {{ form_producto.nombre }}
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Categoría <span class="text-red-600">*</span></label>
+            {{ form_producto.id_cat_producto }}
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Precio Venta ($) <span class="text-red-600">*</span></label>
+            {{ form_producto.precio_venta }}
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Stock Inicial <span class="text-red-600">*</span></label>
+            {{ form_producto.stock_actual }}
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Stock Mínimo <span class="text-red-600">*</span></label>
+            {{ form_producto.stock_minimo }}
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">URL Imagen</label>
+            {{ form_producto.imagen_url }}
+          </div>
+          <div class="md:col-span-2 flex items-center gap-2">
+            {{ form_producto.activo }}
+            <label class="text-xs font-bold text-slate-800">Activo / Visible en catálogo web</label>
+          </div>
+        </div>
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+          <button type="button" data-bs-dismiss="modal" class="px-4 py-2 text-xs font-bold text-slate-700">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase bg-orange-500 text-white hover:bg-orange-600">Registrar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PRODUCTO -->
+<div class="modal fade" id="modalEditarProducto" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <h3 class="text-sm font-black uppercase tracking-widest">Editar Producto</h3>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+      <form id="formEditarProducto" class="p-6 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" id="edit_id_producto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Nombre del Repuesto <span class="text-red-600">*</span></label>
+            <input type="text" id="edit_nombre" name="nombre" class="form-control" required>
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Categoría <span class="text-red-600">*</span></label>
+            <select id="edit_id_cat_producto" name="id_cat_producto" class="form-select" required>
+              {% for cat in categorias %}
+                <option value="{{ cat.id_cat_producto }}">{{ cat.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Precio Venta ($) <span class="text-red-600">*</span></label>
+            <input type="number" step="0.01" min="0" id="edit_precio_venta" name="precio_venta" class="form-control" required>
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Stock Mínimo <span class="text-red-600">*</span></label>
+            <input type="number" min="1" id="edit_stock_minimo" name="stock_minimo" class="form-control" required>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">URL Imagen</label>
+            <input type="url" id="edit_imagen_url" name="imagen_url" class="form-control">
+          </div>
+          <div class="md:col-span-2 flex items-center gap-2">
+            <input type="checkbox" id="edit_activo" name="activo" class="form-check-input">
+            <label class="text-xs font-bold text-slate-800">Activo / Visible en catálogo web</label>
+          </div>
+        </div>
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+          <button type="button" data-bs-dismiss="modal" class="px-4 py-2 text-xs font-bold text-slate-700">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase bg-orange-500 text-white hover:bg-orange-600">Actualizar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJUSTE DE STOCK -->
+<div class="modal fade" id="modalAjusteStock" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <h3 class="text-sm font-black uppercase tracking-widest">Movimiento de Inventario</h3>
+        <button type="button" class="text-slate-400 hover:text-white font-mono text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+
+      <form id="formAjusteStock" class="p-6 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="id_producto" id="modal_id_producto">
+
+        <div class="p-3 bg-slate-100 rounded-xl border border-slate-200">
+          <span class="block text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Movimiento Kardex Directo</span>
+          <p class="text-xs font-bold text-slate-800 uppercase" id="modal_nombre_producto">Cargando producto...</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase mb-1">Tipo de Movimiento <span class="text-red-600">*</span></label>
+          <select name="tipo_movimiento" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 cursor-pointer" required>
+            <option value="" disabled selected>-- Seleccione Tipo --</option>
+            <option value="ENTRADA_COMPRA">Entrada por Compra / Reabastecimiento</option>
+            <option value="ENTRADA_AJUSTE">Entrada por Ajuste / Corrección</option>
+            <option value="SALIDA_AJUSTE">Salida por Ajuste / Mermas / Daño</option>
+            <option value="SALIDA_TALLER">Salida Manual a Taller</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase mb-1">Cantidad de Unidades <span class="text-red-600">*</span></label>
+          <input type="number" name="cantidad" min="1" value="1" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase mb-1">Descripción / Justificación</label>
+          <textarea name="descripcion" placeholder="Motivo o justificación del ajuste de inventario..." class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs text-slate-900 outline-none focus:border-orange-500 min-h-[80px]"></textarea>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+          <button type="button" data-bs-dismiss="modal" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase bg-orange-500 hover:bg-orange-600 text-white">Procesar Movimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+<script>
+// Evitar popups intrusivos de alerta de DataTables
+$.fn.dataTable.ext.errMode = 'none';
+
+// Configuración global CSRF Token AJAX
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+        }
+    }
+});
+
+$(document).ready(function() {
+    let table = null;
+    if ($('#tablaInventario tbody tr td').length > 1) {
+        table = $('#tablaInventario').DataTable({
+            "order": [[1, 'asc']],
+            "dom": "<'row'<'col-12'tr>>" + "<'row mt-6 align-items-center'<'col-md-4 text-xs text-slate-500'i><'col-md-8 text-md-end'Bp>>",
+            "buttons": [
+                { extend: 'print', text: 'Imprimir', className: 'btn btn-sm btn-dark rounded-xl text-xs font-bold me-1' },
+                { extend: 'excel', text: 'Exportar a Excel', className: 'btn btn-sm btn-success rounded-xl text-xs font-bold' }
+            ],
+            "language": { "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+            "columnDefs": [
+              { "searchable": true, "targets": [0, 1, 2] },
+              { "orderable": false, "targets": [3] }
+            ]
+        });
+    }
+
+    // Mapeo del filtro según las columnas del HTML
+    const colMap = {
+        'sku': 0,
+        'nombre': 1,
+        'categoria': 2
+    };
+
+    // Buscador interactivo
+    $('#inputBusquedaCustom').on('input', function() {
+        if (!table) return;
+        const colKey = $('#selectCategoriaBusqueda').val();
+        
+        if (colKey === "global") {
+            table.search(this.value).draw();
+        } else {
+            const colIdx = colMap[colKey];
+            table.columns().search('');
+            if (colIdx !== undefined) {
+                table.column(colIdx).search(this.value).draw();
+            }
+        }
+    });
+
+    // Modal Ajuste Stock Data
+    $('#modalAjusteStock').on('show.bs.modal', function(e) {
+        const btn = $(e.relatedTarget);
+        $('#modal_id_producto').val(btn.data('id'));
+        $('#modal_nombre_producto').text(btn.data('nombre'));
+    });
+
+    // Guardar Categoría AJAX
+    $('#formCrearCategoria').on('submit', function(e) {
+        e.preventDefault();
+        const $form = $(this);
+        $.ajax({
+            url: "{% url 'categoria_crear' %}",
+            type: "POST",
+            data: $form.serialize(),
+            success: function(res) {
+                if (res.status === 'success') {
+                    Swal.fire('¡Éxito!', res.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', res.message || 'No se pudo crear la categoría', 'error');
+                }
+            },
+            error: manejarErrorAjax
+        });
+    });
+
+    // Guardar Producto AJAX
+    $('#formCrearProducto').on('submit', function(e) {
+        e.preventDefault();
+        $.post("{% url 'producto_crear' %}", $(this).serialize())
+        .done(function(res) {
+            Swal.fire('¡Éxito!', res.message, 'success').then(() => location.reload());
+        })
+        .fail(manejarErrorAjax);
+    });
+
+    // Editar Producto AJAX
+    $('#formEditarProducto').on('submit', function(e) {
+        e.preventDefault();
+        const id = $('#edit_id_producto').val();
+        $.post(`/inventario/producto/editar/${id}/`, $(this).serialize())
+        .done(function(res) {
+            Swal.fire('¡Actualizado!', res.message, 'success').then(() => location.reload());
+        })
+        .fail(manejarErrorAjax);
+    });
+
+    // Ajuste Stock Manual AJAX
+    $('#formAjusteStock').on('submit', function(e) {
+        e.preventDefault();
+        $.post("{% url 'inventario_movimiento_crear' %}", $(this).serialize())
+        .done(function(res) {
+            Swal.fire('¡Movimiento Procesado!', res.message, 'success').then(() => location.reload());
+        })
+        .fail(manejarErrorAjax);
+    });
+});
+
+function abrirModalEditar(idProducto) {
+    $.get(`/inventario/api/${idProducto}/`)
+    .done(function(res) {
+        if (res.status === 'success') {
+            const data = res.data;
+            $('#edit_id_producto').val(data.id_producto);
+            $('#edit_nombre').val(data.nombre);
+            $('#edit_id_cat_producto').val(data.id_cat_producto);
+            $('#edit_precio_venta').val(data.precio_venta);
+            $('#edit_stock_minimo').val(data.stock_minimo);
+            $('#edit_imagen_url').val(data.imagen_url);
+            $('#edit_activo').prop('checked', data.activo);
+
+            const modal = new bootstrap.Modal(document.getElementById('modalEditarProducto'));
+            modal.show();
+        }
+    })
+    .fail(manejarErrorAjax);
+}
+
+function toggleEstatus(idProducto) {
+    $.post(`/inventario/producto/estatus/${idProducto}/`)
+    .done(function(res) {
+        if (res.status === 'success') {
+            location.reload();
+        }
+    })
+    .fail(manejarErrorAjax);
+}
+
+function manejarErrorAjax(xhr) {
+    let msg = 'Ocurrió un error inesperado al procesar la solicitud.';
+    if (xhr.responseJSON) {
+        if (xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+        } else if (xhr.responseJSON.errors) {
+            msg = Object.entries(xhr.responseJSON.errors)
+                .map(([field, errs]) => `<b>${field}:</b> ${errs.join(', ')}`)
+                .join('<br>');
+        }
+    }
+    Swal.fire('Atención', msg, 'error');
+}
+</script>
+{% endblock %}

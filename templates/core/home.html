@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Serviautomotriz Fernandez{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+    <style>
+        /* Ajuste para que la navegación de la base y el header dinámico de Vue convivan perfectamente */
+        header#page-top {
+            padding-top: 80px; /* Evita que el navbar fijo tape el lema principal */
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+<div id="app">
+
+<header id="page-top" :style="estiloFondo">
+    <h1>[[ lema.principal ]]</h1>
+    <p>[[ lema.subtitulo ]]</p>
+    <div class="slider-dots">
+        <span v-for="(img, index) in imagenes" :key="index"
+              :class="{ active: index === indiceActivo }"
+              @click="indiceActivo = index">
+        </span>
+    </div>
+
+    <div class="cta-container">
+        {% if user.is_authenticated %}
+        <a href="{% url 'agenda_citas_list' %}" class="btn-cta primary">AGENDAR CITA</a>
+        {% else %}
+        <a href="{% url 'login' %}" class="btn-cta primary">AGENDAR CITA</a>
+        {% endif %}
+
+        <a href="{% url 'inicio_tienda' %}" class="btn-cta secondary btn-repuesto">BUSCAR REPUESTO</a>
+    </div>
+</header>
+
+
+        <section class="marcas-confianza">
+            <div class="marcas-container">
+                <span>ESPECIALISTAS EN:</span>
+                <div class="logos-grid">
+                    <img src="{% static 'img/marcas/toyota.png' %}" alt="Toyota">
+                    <img src="{% static 'img/marcas/ford.png' %}" alt="Ford">
+                    <img src="{% static 'img/marcas/chevrolet.jpeg' %}" alt="Chevrolet">
+                    <img src="{% static 'img/marcas/hyundai.jpeg' %}" alt="Hyundai">
+                </div>
+            </div>
+        </section>
+
+        <section id="logros" class="logros-section">
+            <div class="logro-item" v-for="logro in logros" :key="logro.texto">
+                <div class="logro-numero">[[ logro.cantidad ]]+</div>
+                <div class="logro-texto">[[ logro.texto ]]</div>
+            </div>
+        </section>
+
+        <section id="sobre-nosotros" class="about-section">
+            <div class="about-container">
+                <div class="vision-box">
+                    <span>NUESTRO PROPÓSITO</span>
+                    <h2>Nuestra Visión</h2>
+                    <p class="vision-text">[[ empresa.vision ]]</p>
+                </div>
+
+                <div class="valores-grid">
+                    <div class="valor-card" v-for="valor in empresa.valores" :key="valor">
+                        <div class="valor-decorator"></div>
+                        <h3>[[ valor ]]</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="servicios" class="sticky-layout">
+            <div class="sticky-header">
+                <span>NUESTRA EXPERIENCIA</span>
+                <h2>¿Qué podemos hacer por tu vehículo?</h2>
+                <p>En Serviautomotriz Fernandez combinamos precisión técnica con atención personalizada.</p>
+                <a href="#contacto" class="btn-cta primary">AGENDAR AHORA</a>
+            </div>
+
+            <div class="scroll-content">
+                <div class="servicio-card" v-for="s in servicios" :key="s.titulo">
+                    <div class="icon-box">
+                        <i :class="s.icono"></i>
+                    </div>
+                    <div class="servicio-info">
+                        <h3>[[ s.titulo ]]</h3>
+                        <p>[[ s.descripcion ]]</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="oferta" class="lead-magnet">
+            <div class="lead-container">
+                <div class="lead-text">
+                    <h2>¿Necesitas un presupuesto rápido?</h2>
+                    <p>No des vueltas por toda la ciudad. Cuéntanos qué falla tiene tu vehículo y te enviamos un <strong>estimado de costos por WhatsApp</strong>.</p>
+                    <ul class="lead-benefits">
+                        <li><i class="fas fa-bolt"></i> Respuesta en menos de 30 minutos.</li>
+                        <li><i class="fas fa-list-check"></i> Desglose de repuestos y mano de obra.</li>
+                    </ul>
+                </div>
+
+                <div class="lead-form-box">
+                    <form @submit.prevent="enviarACotizar">
+                        <input type="text" v-model="lead.nombre" placeholder="Tu Nombre" required>
+                        <input type="tel" v-model="lead.whatsapp" placeholder="Tu WhatsApp" required>
+                        <textarea v-model="lead.falla" placeholder="Describe brevemente la falla o el repuesto que buscas..." rows="3" required></textarea>
+
+                        <button type="submit" class="btn-enviar-lead">
+                            SOLICITAR PRESUPUESTO <i class="fab fa-whatsapp"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="galeria" class="galeria-section">
+            <div class="section-title">
+                <span>NUESTRO TRABAJO</span>
+                <h2>Galería de Proyectos</h2>
+            </div>
+
+            <div class="galeria-container">
+                <div v-if="fotos.length === 0" class="empty-gallery">
+                    <i class="fas fa-camera-retro"></i>
+                    <p>Próximamente fotos de nuestros trabajos...</p>
+                </div>
+
+                <div v-else class="galeria-grid">
+                    <div class="foto-card" v-for="(foto, index) in fotos" :key="index" @click="abrirImagen(foto)">
+                        <img :src="'/static/img/galeria/' + foto" alt="Trabajo del taller">
+                        <div class="foto-overlay">
+                            <i class="fas fa-search-plus"></i>
+                            <span>VER TRABAJO</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="imagenSeleccionada" class="modal-foto" @click="imagenSeleccionada = null">
+                <img :src="'/static/img/galeria/' + imagenSeleccionada">
+                <button class="cerrar-modal">×</button>
+            </div>
+        </section>
+
+        <section id="contacto" class="contacto-section">
+            <div class="section-title">
+                <span>ESTAMOS PARA AYUDARTE</span>
+                <h2>Ubicación y Contacto</h2>
+            </div>
+
+            <div class="contacto-container">
+                <div class="contacto-info">
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <h3>Dirección</h3>
+                            <p>Calle Principal Barrio el Cambio, Diagonal al Ambulatorio Noel Barazarte. Guanare, Portuguesa.</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <h3>Horario de Atención</h3>
+                            <p>Lunes a Viernes: 8:00 am - 6:00 pm</p>
+                            <p>Sábados: Previa Cita</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-phone-alt"></i>
+                        <div>
+                            <h3>Teléfonos / WhatsApp</h3>
+                            <p>+58 424-5787208</p>
+                            <p>+58 424-2456837</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mapa-box">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3929.999!2d-69.7378!3d9.0287!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zOcKwMDEnNDMuMSJOIDY5wrA0NCcyLjciVw!5e0!3m2!1ses!2sve!4v1234567890!5m2!1ses!2sve" width="100%" height="400" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+            </div>
+        </section>
+
+        <div class="social-floating">
+            <a href="https://wa.me/584245787208" target="_blank" class="social-icon whatsapp" title="WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+            </a>
+            <a href="https://instagram.com/medinaluisalbertofernandez" target="_blank" class="social-icon instagram" title="Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://tiktok.com/@lfernandez_1" target="_blank" class="social-icon tiktok" title="TikTok">
+                <i class="fab fa-tiktok"></i>
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            delimiters: ['[[', ']]'],
+            data() {
+                return {
+                    lead: {
+                        nombre: '',
+                        whatsapp: '',
+                        falla: ''
+                    },
+                    lema: {
+                        principal: "NO PIDO QUE ME JUZGUEN POR MIS LOGROS... SINO POR MIS DERROTAS",
+                        subtitulo: "Ya que son muy pocas"
+                    },
+                    empresa: {
+                        vision: "Convertirnos en el referente tecnológico automotriz de Portuguesa...",
+                        valores: ["Precisión", "Honestidad", "Rapidez", "Garantía"]
+                    },
+                    servicios: [
+                        {
+                            titulo: 'SERVICIO DE MECÁNICA LIGERA',
+                            descripcion: 'Frenos, tren delantero, y ajustes preventivos para tu vehículo.',
+                            icono: 'fas fa-tools'
+                        },
+                        {
+                            titulo: 'LAVADO Y ENGRASE',
+                            descripcion: 'Limpieza detallada de motor y chasis con productos de alta calidad.',
+                            icono: 'fas fa-shower'
+                        },
+                        {
+                            titulo: 'CAMBIO DE ACEITE Y FILTRO',
+                            descripcion: 'Mantenimiento preventivo con las mejores marcas del mercado.',
+                            icono: 'fas fa-oil-can'
+                        }
+                    ],
+                    logros: [
+                        { cantidad: 500, texto: 'Vehículos Atendidos' },
+                        { cantidad: 5, texto: 'Años de Experiencia' },
+                        { cantidad: 100, texto: 'Repuestos Originales' },
+                        { cantidad: 4.9, texto: 'Calidad en Google Maps' }
+                    ],
+                    imagenSeleccionada: null,
+                    fotos: ['preso.jpg', 'delincuente.png', 'peruano.png', 'gatubela.jpg'],
+                    formulario: {
+                        nombre: '',
+                        email: '',
+                        mensaje: ''
+                    },
+                    enviado: false,
+                    indiceActivo: 0,
+                    imagenes: [
+                        '/static/img/caloboleta.avif',
+                        '/static/img/calo2.jpg',
+                        '/static/img/calo3.jpg'
+                    ],
+                }
+            },
+            computed: {
+                estiloFondo() {
+                    return {
+                        backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${this.imagenes[this.indiceActivo]})`,
+                        transition: 'background-image 0.5s ease-in-out'
+                    }
+                }
+            },
+            methods: {
+                enviarACotizar() {
+                    const telefonoTaller = "584121234567";
+                    const mensaje = `Hola, soy ${this.lead.nombre}. Quisiera un presupuesto para: ${this.lead.falla}.`;
+                    const url = `https://wa.me/${telefonoTaller}?text=${encodeURIComponent(mensaje)}`;
+                    window.open(url, '_blank');
+                    this.lead = { nombre: '', whatsapp: '', falla: '' };
+                },
+                seleccionarServicio(nombre) {
+                    alert("Has seleccionado: " + nombre + ". Pronto podrás agendar tu cita para este servicio.");
+                },
+                abrirImagen(nombre) {
+                    this.imagenSeleccionada = nombre;
+                },
+                enviarFormulario() {
+                    console.log("Datos a enviar:", this.formulario);
+                    this.enviado = true;
+                    this.formulario.nombre = '';
+                    this.formulario.email = '';
+                    this.formulario.mensaje = '';
+                },
+                avanzar() {
+                    if (this.indiceActivo < this.imagenes.length - 1) {
+                        this.indiceActivo++;
+                    } else {
+                        this.indiceActivo = 0;
+                    }
+                },
+                retroceder() {
+                    if (this.indiceActivo > 0) {
+                        this.indiceActivo--;
+                    } else {
+                        this.indiceActivo = this.imagenes.length - 1;
+                    }
+                },
+                iniciarAutoplay() {
+                    setInterval(() => {
+                        this.avanzar();
+                    }, 5000);
+                }
+            },
+            mounted() {
+                this.imagenes.forEach((ruta) => {
+                    const img = new Image();
+                    img.src = ruta;
+                });
+                this.iniciarAutoplay();
+            }
+        }).mount('#app')
+    </script>
+{% endblock %}

@@ -1,0 +1,360 @@
+{% extends "base_form.html" %}
+{% load static %}
+
+{% block form_page_title %}Iniciar Sesión - Serviautomotriz Fernandez{% endblock %}
+{% block title %}Iniciar Sesión{% endblock %}
+
+{% block form_body %}
+<div class="login-wrapper">
+    <!-- 1. Logotipo principal -->
+    <div class="login-logo-container">
+        <img src="{% static 'img/logo del taller.jpg' %}" alt="Logo del Taller" class="login-logo-img">
+    </div>
+
+    <!-- 2. Título centrado entre el logo y el formulario -->
+    <h2 class="login-heading">Inicio de Sesión</h2>
+
+    <!-- 3. Formulario de acceso -->
+    <form method="post" id="loginForm" novalidate class="login-form">
+        {% csrf_token %}
+
+        <!-- Mensajes de error globales -->
+        {% if form.non_field_errors %}
+            <div class="form-alert form-alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ form.non_field_errors|join:", " }}</span>
+            </div>
+        {% endif %}
+
+        <!-- Campo: Usuario / Correo -->
+        <div class="form-group">
+            <label for="id_correo" class="form-label">Usuario o Correo</label>
+            <div class="form-input-wrapper">
+                <input type="text" 
+                       id="id_correo" 
+                       name="correo" 
+                       class="form-control" 
+                       placeholder="Ingrese su usuario o correo" 
+                       autocomplete="off" 
+                       required
+                       value="{{ form.data.correo|default:'' }}">
+            </div>
+            {% if form.correo.errors %}
+                <span class="form-error-text">{{ form.correo.errors|join:", " }}</span>
+            {% else %}
+                <span id="correoError" class="form-error-text" style="display:none;"></span>
+            {% endif %}
+        </div>
+
+        <!-- Campo: Contraseña -->
+        <div class="form-group">
+            <label for="id_password" class="form-label">Contraseña</label>
+            <div class="form-input-wrapper">
+                <input type="password" 
+                       id="id_password" 
+                       name="password" 
+                       class="form-control" 
+                       placeholder="Ingrese su contraseña" 
+                       required>
+            </div>
+            {% if form.password.errors %}
+                <span class="form-error-text">{{ form.password.errors|join:", " }}</span>
+            {% else %}
+                <span id="passwordError" class="form-error-text" style="display:none;"></span>
+            {% endif %}
+        </div>
+
+        <!-- Enlace auxiliar: Recuperar contraseña -->
+        <div class="form-options">
+            <a href="{% url 'reset_password' %}" class="link-secondary">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <!-- Botón de acción principal -->
+        <button type="submit" class="btn-primary-action">
+            Iniciar Sesión
+        </button>
+    </form>
+
+    <!-- Pie del bloque de inicio de sesión -->
+    <div class="login-footer">
+        <p class="register-prompt">
+            ¿No estás registrado? <a href="{% url 'registro' %}" class="link-highlight">Regístrate aquí</a>
+        </p>
+        <div class="back-home-wrapper">
+            <a href="{% url 'home' %}" class="link-back">
+                <i class="fas fa-arrow-left"></i> Volver al inicio
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estructura general del contenedor */
+    .login-wrapper {
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 10px 0;
+    }
+
+    /* Contenedor e imagen del Logo */
+    .login-logo-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+
+    .login-logo-img {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--naranja);
+        box-shadow: 0 6px 20px rgba(255, 102, 0, 0.25);
+        transition: transform var(--transicion, 0.3s ease);
+    }
+
+    .login-logo-img:hover {
+        transform: scale(1.03);
+    }
+
+    /* Título de Inicio de Sesión centrado */
+    .login-heading {
+        color: var(--negro);
+        text-align: center;
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-top: 0;
+        margin-bottom: 24px;
+        letter-spacing: -0.3px;
+    }
+
+    /* Formulario y Bloques de Entrada */
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .form-label {
+        color: var(--gris) !important;
+        font-size: 0.88rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-input-wrapper {
+        width: 100%;
+        position: relative;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        background-color: var(--oscuro) !important;
+        border: 1px solid #3d3d3d !important;
+        border-radius: 8px;
+        color: var(--blanco) !important;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--naranja) !important;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.2);
+    }
+
+    .form-control::placeholder {
+        color: #777;
+    }
+
+    /* Opciones y enlaces dentro del form */
+    .form-options {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: -6px;
+    }
+
+    /* Botón Submit */
+    .btn-primary-action {
+        background-color: var(--naranja);
+        color: var(--blanco);
+        border: none;
+        padding: 14px;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        width: 100%;
+        margin-top: 6px;
+        box-shadow: 0 4px 12px rgba(255, 102, 0, 0.25);
+        transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-primary-action:hover {
+        background-color: var(--naranja-oscuro);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 102, 0, 0.35);
+    }
+
+    .btn-primary-action:active {
+        transform: translateY(0);
+    }
+
+    /* Alertas y Mensajes de Error */
+    .form-alert-error {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background-color: rgba(255, 77, 90, 0.12);
+        border: 1px solid #ff4d5a;
+        color: #ff4d5a;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: left;
+    }
+
+    .form-error-text {
+        color: #ff4d5a;
+        font-size: 0.82rem;
+        margin-top: 6px;
+        font-weight: 500;
+        display: block;
+    }
+
+    /* Enlaces y Pie de Página */
+    .login-footer {
+        margin-top: 28px;
+        padding-top: 20px;
+        border-top: 1px solid #2a2a2a;
+        text-align: center;
+    }
+
+    .register-prompt {
+        color: #999;
+        font-size: 0.92rem;
+        margin-bottom: 16px;
+    }
+
+    .link-secondary, 
+    .link-highlight {
+        color: var(--naranja);
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s ease;
+    }
+
+    .link-secondary {
+        font-size: 0.85rem;
+        color: #aaa;
+    }
+
+    .link-secondary:hover {
+        color: var(--naranja);
+        text-decoration: underline;
+    }
+
+    .link-highlight:hover {
+        color: var(--naranja-oscuro);
+        text-decoration: underline;
+    }
+
+    .back-home-wrapper {
+        margin-top: 12px;
+    }
+
+    .link-back {
+        color: #777 !important;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .link-back:hover {
+        color: var(--naranja) !important;
+    }
+
+    .link-back i {
+        margin-right: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById("loginForm");
+    const correoInput = document.getElementById("id_correo");
+    const passwordInput = document.getElementById("id_password");
+
+    function showError(id, msg) {
+        const el = document.getElementById(id);
+        if (el) { 
+            el.textContent = msg; 
+            el.style.display = "block"; 
+        }
+    }
+
+    function hideError(id) {
+        const el = document.getElementById(id);
+        if (el) { 
+            el.textContent = ""; 
+            el.style.display = "none"; 
+        }
+    }
+
+    correoInput.addEventListener("input", function() {
+        correoInput.value = correoInput.value.replace(/[^A-Za-z0-9@._+\-]/g, '');
+        
+        if (correoInput.value.trim() === "") {
+            showError("correoError", "El usuario o correo es obligatorio.");
+        } else {
+            hideError("correoError");
+        }
+    });
+
+    passwordInput.addEventListener("input", function() {
+        if (passwordInput.value.trim() === "") {
+            showError("passwordError", "La contraseña es obligatoria.");
+        } else {
+            hideError("passwordError");
+        }
+    });
+
+    form.addEventListener("submit", function(e) {
+        let isValid = true;
+
+        if (correoInput.value.trim() === "") {
+            showError("correoError", "El usuario o correo es obligatorio.");
+            isValid = false;
+        }
+
+        if (passwordInput.value.trim() === "") {
+            showError("passwordError", "La contraseña es obligatoria.");
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

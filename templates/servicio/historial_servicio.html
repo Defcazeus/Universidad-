@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Evolución de Servicio - Orden de Trabajo{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-2">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="border-bottom pb-2" style="color: var(--oscuro); font-weight: 800;">
+                <i class="bi bi-wrench-adjustable me-2" style="color: var(--naranja);"></i>HISTORIAL DE ESTADOS Y PROGRESO
+            </h2>
+            <p class="text-muted">Línea de tiempo interna y auditoría operativa de cambios de estado del servicio técnico.</p>
+        </div>
+
+    </div>
+
+    <div class="row gap-4 justify-content-center">
+        
+        <div class="col-md-4">
+            <div class="p-4" style="background: var(--blanco); border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 5px solid var(--oscuro);">
+                
+                <div class="text-center mb-4 p-3 bg-dark rounded-3" style="min-height: 100px; display: flex; align-items: center; justify-content: center;">
+                    <div>
+                        <small class="text-uppercase text-muted fw-bold d-block mb-1" style="font-size:0.75rem; letter-spacing: 1px;">Orden de Trabajo Activa</small>
+                        <h3 class="font-monospace fw-bold m-0" style="color: var(--naranja);">#OT-550</h3>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle mb-1">Mantenimiento Correctivo</span>
+                    <h5 style="font-weight: 800; color: var(--oscuro); margin: 0;">Sustitución de Embrague</h5>
+                    <span class="font-monospace text-muted fw-bold d-block mt-1" style="font-size: 0.9rem;">Vehículo Placa: BAB-12M</span>
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <div class="p-3 rounded-3" style="background-color: #f8f9fa; font-size: 0.9rem;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Mecánico Principal:</span>
+                        <span class="fw-bold text-dark">Ing. Pedro Pérez</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Estatus Actual:</span>
+                        <span class="badge bg-warning text-dark fw-bold px-2 py-1">
+                            <i class="bi bi-gear-wide-connected spin me-1"></i> Reparando
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="p-4 bg-white" style="border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+                <h4 class="mb-4" style="font-weight: 700; color: var(--oscuro);">Línea de Tiempo Operativa</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead style="background-color: var(--oscuro); color: white;">
+                            <tr>
+                                <th class="p-3">ID Registro</th>
+                                <th class="p-3">Estado Asignado</th>
+                                <th class="p-3" style="width: 55%;">Notas de Progreso / Avances</th>
+                                <th class="p-3">Fecha / Hora</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="p-3 font-monospace fw-bold text-secondary">#HSR-91</td>
+                                <td class="p-3">
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">Reparando</span>
+                                </td>
+                                <td class="p-3 text-dark small fw-medium">
+                                    Bajando caja de cambios para sustitución del kit de embrague (disco, prensa y collarín). Insumos retirados de almacén correctamente.
+                                </td>
+                                <td class="p-3 text-muted small">02/06/2026 08:30 AM</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-monospace fw-bold text-secondary">#HSR-90</td>
+                                <td class="p-3">
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">En Diagnóstico</span>
+                                </td>
+                                <td class="p-3 text-secondary small">
+                                    El vehículo ingresa en grúa. Se inicia revisión del sistema embrague mecánico, se detecta pérdida total de presión hidráulica en la bomba superior.
+                                </td>
+                                <td class="p-3 text-muted small">02/06/2026 07:15 AM</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include "componentes/modals_crud.html" with titulo_crear="Registrar Estado de Progreso" icono_modulo="bi bi-wrench-adjustable" id_modal_crear="modalNuevoHistorialServio" action_crear="" campos_modal=campos_historial_servicio %}
+
+</div>
+{% endblock %}

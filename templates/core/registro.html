@@ -1,0 +1,549 @@
+{% extends "base_form.html" %}
+{% load static %}
+
+{% block form_page_title %}Registro de Usuario - Serviautomotriz Fernandez{% endblock %}
+{% block title %}Registro de Usuario{% endblock %}
+
+{% block form_body %}
+<div class="register-wrapper">
+    <!-- 1. Título centrado -->
+    <h2 class="register-heading">Crear Cuenta</h2>
+
+    <!-- 2. Formulario de registro -->
+    <form method="post" novalidate id="registrationForm" class="register-form">
+        {% csrf_token %}
+
+        <!-- Mensajes de error globales del formulario -->
+        {% if form.non_field_errors %}
+            <div class="form-alert form-alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ form.non_field_errors|join:", " }}</span>
+            </div>
+        {% endif %}
+
+        <!-- Fila: Cédula de Identidad -->
+        <div class="form-group">
+            <label class="form-label">Cédula de Identidad</label>
+            <div class="compound-input-group">
+                <select name="cod_cedula" id="id_cod_cedula" class="form-control select-prefix">
+                    <option value="V-" {% if form.data.cod_cedula == "V-" or not form.data.cod_cedula %}selected{% endif %}>V-</option>
+                    <option value="E-" {% if form.data.cod_cedula == "E-" %}selected{% endif %}>E-</option>
+                    <option value="J-" {% if form.data.cod_cedula == "J-" %}selected{% endif %}>J-</option>
+                </select>
+                <input type="text" 
+                       name="cedula" 
+                       id="id_cedula" 
+                       class="form-control input-main" 
+                       placeholder="1230238" 
+                       maxlength="9" 
+                       autocomplete="off" 
+                       value="{{ form.data.cedula|default:'' }}" 
+                       required>
+            </div>
+            {% if form.cedula.errors or form.cod_cedula.errors %}
+                <span class="form-error-text">
+                    {{ form.cod_cedula.errors|join:", " }} {{ form.cedula.errors|join:", " }}
+                </span>
+            {% else %}
+                <span id="cedulaError" class="form-error-text" style="display:none;"></span>
+            {% endif %}
+        </div>
+
+        <!-- Fila: Nombres y Apellidos (2 columnas) -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="id_nombre" class="form-label">Nombres</label>
+                <input type="text" 
+                       name="nombre" 
+                       id="id_nombre" 
+                       class="form-control" 
+                       required 
+                       autocomplete="off" 
+                       placeholder="Ingrese nombres"
+                       value="{{ form.data.nombre|default:'' }}" 
+                       maxlength="25">
+                {% if form.nombre.errors %}
+                    <span class="form-error-text">{{ form.nombre.errors|join:", " }}</span>
+                {% else %}
+                    <span id="firstNameError" class="form-error-text" style="display:none;"></span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_apellido" class="form-label">Apellidos</label>
+                <input type="text" 
+                       name="apellido" 
+                       id="id_apellido" 
+                       class="form-control" 
+                       placeholder="Ingrese apellidos" 
+                       autocomplete="off" 
+                       maxlength="25" 
+                       required
+                       value="{{ form.data.apellido|default:'' }}">
+                {% if form.apellido.errors %}
+                    <span class="form-error-text">{{ form.apellido.errors|join:", " }}</span>
+                {% else %}
+                    <span id="lastNameError" class="form-error-text" style="display:none;"></span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Fila: Correo Electrónico -->
+        <div class="form-group">
+            <label for="id_correo" class="form-label">Correo Electrónico</label>
+            <input type="email" 
+                   name="correo" 
+                   id="id_correo" 
+                   class="form-control" 
+                   placeholder="ejemplo@correo.com"
+                   value="{{ form.data.correo|default:'' }}" 
+                   autocomplete="off">
+            {% if form.correo.errors %}
+                <span class="form-error-text">{{ form.correo.errors|join:", " }}</span>
+            {% else %}
+                <span id="correoError" class="form-error-text" style="display:none;"></span>
+            {% endif %}
+        </div>
+
+        <!-- Fila: Número Telefónico -->
+        <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <div class="compound-input-group">
+                <select name="cod_tel" id="id_cod_tel" class="form-control select-prefix">
+                    <option value="0412" {% if form.data.cod_tel == "0412" %}selected{% endif %}>0412</option>
+                    <option value="0414" {% if form.data.cod_tel == "0414" %}selected{% endif %}>0414</option>
+                    <option value="0424" {% if form.data.cod_tel == "0424" %}selected{% endif %}>0424</option>
+                    <option value="0416" {% if form.data.cod_tel == "0416" %}selected{% endif %}>0416</option>
+                    <option value="0426" {% if form.data.cod_tel == "0426" %}selected{% endif %}>0426</option>
+                </select>
+                <input type="text" 
+                       name="num_tel" 
+                       id="id_num_tel" 
+                       class="form-control input-main" 
+                       placeholder="7654321" 
+                       maxlength="7" 
+                       autocomplete="off" 
+                       value="{{ form.data.num_tel|default:'' }}">
+            </div>
+            {% if form.cod_tel.errors or form.num_tel.errors %}
+                <span class="form-error-text">
+                    {{ form.cod_tel.errors|join:", " }} {{ form.num_tel.errors|join:", " }}
+                </span>
+            {% else %}
+                <span id="phoneError" class="form-error-text" style="display:none;"></span>
+            {% endif %}
+        </div>
+
+        <!-- Fila: Contraseñas (2 columnas) -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="id_password1" class="form-label">Contraseña</label>
+                <input type="password" 
+                       name="password1" 
+                       id="id_password1" 
+                       class="form-control" 
+                       placeholder="Mínimo 8 caracteres" 
+                       maxlength="50" 
+                       autocomplete="off">
+                {% if form.password1.errors %}
+                    <span class="form-error-text">{{ form.password1.errors|join:", " }}</span>
+                {% else %}
+                    <span id="password1Error" class="form-error-text" style="display:none;"></span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password2" class="form-label">Confirmar Contraseña</label>
+                <input type="password" 
+                       name="password2" 
+                       id="id_password2" 
+                       class="form-control" 
+                       placeholder="Repita contraseña" 
+                       maxlength="50" 
+                       autocomplete="off">
+                {% if form.password2.errors %}
+                    <span class="form-error-text">{{ form.password2.errors|join:", " }}</span>
+                {% else %}
+                    <span id="passwordError" class="form-error-text" style="display:none;"></span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Botón de acción principal -->
+        <button type="submit" class="btn-primary-action">Registrarse</button>
+    </form>
+
+    <!-- Pie del bloque de registro -->
+    <div class="register-footer">
+        <p class="login-prompt">
+            ¿Ya tienes una cuenta? <a href="{% url 'login' %}" class="link-highlight">Inicia sesión</a>
+        </p>
+        <div class="back-home-wrapper">
+            <a href="{% url 'home' %}" class="link-back">
+                <i class="fas fa-arrow-left"></i> Volver al inicio
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-wrapper {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 10px 0;
+    }
+
+    .register-heading {
+        color: var(--naranja);
+        text-align: center;
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-top: 0;
+        margin-bottom: 24px;
+        letter-spacing: -0.3px;
+    }
+
+    .register-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    @media (max-width: 576px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .form-label {
+        color: var(--gris) !important;
+        font-size: 0.88rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 11px 14px;
+        background-color: var(--oscuro) !important;
+        border: 1px solid #3d3d3d !important;
+        border-radius: 8px;
+        color: var(--blanco) !important;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--naranja) !important;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.2);
+    }
+
+    .form-control::placeholder {
+        color: #777;
+    }
+
+    .compound-input-group {
+        display: flex;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .select-prefix {
+        width: 95px;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    .input-main {
+        flex-grow: 1;
+    }
+
+    .btn-primary-action {
+        background-color: var(--naranja);
+        color: var(--blanco);
+        border: none;
+        padding: 14px;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        width: 100%;
+        margin-top: 8px;
+        box-shadow: 0 4px 12px rgba(255, 102, 0, 0.25);
+        transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-primary-action:hover {
+        background-color: var(--naranja-oscuro);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 102, 0, 0.35);
+    }
+
+    .btn-primary-action:active {
+        transform: translateY(0);
+    }
+
+    .form-alert-error {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background-color: rgba(255, 77, 90, 0.12);
+        border: 1px solid #ff4d5a;
+        color: #ff4d5a;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: left;
+    }
+
+    .form-error-text {
+        color: #ff4d5a;
+        font-size: 0.82rem;
+        margin-top: 5px;
+        font-weight: 500;
+        display: block;
+    }
+
+    .register-footer {
+        margin-top: 24px;
+        padding-top: 18px;
+        border-top: 1px solid #2a2a2a;
+        text-align: center;
+    }
+
+    .login-prompt {
+        color: #999;
+        font-size: 0.92rem;
+        margin-bottom: 12px;
+    }
+
+    .link-highlight {
+        color: var(--naranja);
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s ease;
+    }
+
+    .link-highlight:hover {
+        color: var(--naranja-oscuro);
+        text-decoration: underline;
+    }
+
+    .back-home-wrapper {
+        margin-top: 10px;
+    }
+
+    .link-back {
+        color: #777 !important;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .link-back:hover {
+        color: var(--naranja) !important;
+    }
+
+    .link-back i {
+        margin-right: 4px;
+    }
+
+    /* Estilos personalizados para las alertas de SweetAlert2 */
+    .swal2-popup-custom {
+        background-color: var(--oscuro, #1a1a1a) !important;
+        color: var(--blanco, #ffffff) !important;
+        border: 1px solid #333 !important;
+        border-radius: 12px !important;
+    }
+    .swal2-title-custom {
+        color: var(--blanco, #ffffff) !important;
+    }
+    .swal2-confirm-btn-custom {
+        background-color: var(--naranja, #ff6600) !important;
+        color: #fff !important;
+        font-weight: 600 !important;
+        padding: 10px 24px !important;
+        border-radius: 6px !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- CDN de SweetAlert2 para alertas interactivas -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    function showError(id, msg) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = msg; el.style.display = "block"; }
+    }
+    function hideError(id) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = ""; el.style.display = "none"; }
+    }
+
+    const codCedula  = document.getElementById("id_cod_cedula");
+    const cedula     = document.getElementById("id_cedula");
+    const firstName  = document.getElementById("id_nombre");
+    const lastName   = document.getElementById("id_apellido");
+    const correo     = document.getElementById("id_correo");
+    const role       = document.getElementById("id_role");
+    const codTel     = document.getElementById("id_cod_tel");
+    const numTel     = document.getElementById("id_num_tel");
+    const password1  = document.getElementById("id_password1");
+    const password2  = document.getElementById("id_password2");
+
+    function validarCedula() {
+        const val = cedula.value.trim();
+        if (!val) {
+            showError("cedulaError", "La cédula es obligatoria.");
+            return false;
+        } else if (val.length < 6) {
+            showError("cedulaError", "La cédula debe contener al menos 6 dígitos.");
+            return false;
+        } else {
+            hideError("cedulaError");
+            return true;
+        }
+    }
+
+    cedula.addEventListener("input", () => {
+        cedula.value = cedula.value.replace(/[^0-9]/g, '');
+        validarCedula();
+    });
+
+    firstName.addEventListener("input", () => {
+        firstName.value = firstName.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/gu, '');
+        firstName.value.trim() === "" ? showError("firstNameError", "El campo es obligatorio.") : hideError("firstNameError");
+    });
+    firstName.addEventListener("blur", () => {
+        firstName.value = firstName.value.split(" ").filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    });
+
+    lastName.addEventListener("input", () => {
+        lastName.value = lastName.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/gu, '');
+        lastName.value.trim() === "" ? showError("lastNameError", "El campo es obligatorio.") : hideError("lastNameError");
+    });
+    lastName.addEventListener("blur", () => {
+        lastName.value = lastName.value.split(" ").filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    });
+
+    correo.addEventListener("input", () => {
+        correo.value = correo.value.replace(/[^A-Za-z0-9@._+\-]/g, '');
+        const val = correo.value.trim();
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!val) { showError("correoError", "El campo es obligatorio."); } 
+        else if (!regex.test(val)) { showError("correoError", "Ingrese un correo electrónico válido."); } 
+        else { hideError("correoError"); }
+    });
+
+    function validarTelefono() {
+        const numVal = numTel.value.trim();
+        if (codTel.value === "" && numVal !== "") {
+            showError("phoneError", "Seleccione un código de área.");
+            return false;
+        } else if (codTel.value !== "" && numVal === "") {
+            showError("phoneError", "El número de teléfono es obligatorio.");
+            return false;
+        } else if (numVal !== "" && numVal.length < 7) {
+            showError("phoneError", "El número debe tener exactamente 7 dígitos.");
+            return false;
+        } else {
+            hideError("phoneError");
+            return true;
+        }
+    }
+
+    codTel.addEventListener("change", validarTelefono);
+    numTel.addEventListener("input", () => {
+        numTel.value = numTel.value.replace(/[^0-9]/g, '');
+        validarTelefono();
+    });
+
+    password1.addEventListener("input", () => {
+        if (!password1.value) { showError("password1Error", "El campo es obligatorio."); } 
+        else if (password1.value.length < 8) { showError("password1Error", "La contraseña debe tener al menos 8 caracteres."); } 
+        else { hideError("password1Error"); }
+        if (password2.value && password1.value !== password2.value) { showError("passwordError", "Las contraseñas no coinciden."); } 
+        else if (password2.value) { hideError("passwordError"); }
+    });
+
+    password2.addEventListener("input", () => {
+        if (!password2.value) { showError("passwordError", "Confirme la contraseña."); } 
+        else if (password1.value !== password2.value) { showError("passwordError", "Las contraseñas no coinciden."); } 
+        else { hideError("passwordError"); }
+    });
+
+    const form = document.getElementById("registrationForm");
+    form.addEventListener("submit", function(e) {
+        let valid = true;
+
+        if (!validarCedula()) { valid = false; }
+        if (firstName.value.trim() === "") { showError("firstNameError", "El campo es obligatorio."); valid = false; }
+        if (lastName.value.trim() === "") { showError("lastNameError", "El campo es obligatorio."); valid = false; }
+
+        const correoVal = correo.value.trim();
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!correoVal) { showError("correoError", "El campo es obligatorio."); valid = false; } 
+        else if (!regex.test(correoVal)) { showError("correoError", "Ingrese un correo electrónico válido."); valid = false; }
+
+        if (role && role.type !== "hidden" && role.value === "") { showError("roleError", "Seleccione un rol."); valid = false; }
+        if (!validarTelefono()) { valid = false; }
+
+        if (!password1.value) { showError("password1Error", "La contraseña es obligatoria."); valid = false; } 
+        else if (password1.value.length < 8) { showError("password1Error", "La contraseña debe tener al menos 8 caracteres."); valid = false; }
+        if (!password2.value) { showError("passwordError", "Confirme la contraseña."); valid = false; } 
+        else if (password1.value !== password2.value) { showError("passwordError", "Las contraseñas no coinciden."); valid = false; }
+
+        if (!valid) { e.preventDefault(); }
+    });
+
+    <!-- Renderizado de la Alerta de Éxito basada en Django Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                Swal.fire({
+                    title: '¡Registro Exitoso!',
+                    text: '{{ message }}',
+                    icon: 'success',
+                    confirmButtonText: 'Iniciar Sesión',
+                    customClass: {
+                        popup: 'swal2-popup-custom',
+                        title: 'swal2-title-custom',
+                        confirmButton: 'swal2-confirm-btn-custom'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = "{% url 'login' %}";
+                    }
+                });
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %}

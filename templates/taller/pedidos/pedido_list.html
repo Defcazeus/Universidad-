@@ -1,0 +1,744 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tablero de Control de Pedidos - Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  .kanban-scroll::-webkit-scrollbar {
+    height: 8px;
+    width: 6px;
+  }
+  .kanban-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+  }
+  .kanban-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+  }
+  .kanban-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1600px] mx-auto px-4 py-6 space-y-6 font-sans text-slate-900 bg-slate-100 min-h-screen">
+
+  <!-- HEADER DEL COMMAND CENTER -->
+  <header class="bg-slate-900 text-white rounded-2xl p-5 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-4 border-orange-500">
+    <div class="flex items-center gap-4">
+      <div class="p-3 bg-orange-500/20 border border-orange-500/40 rounded-xl text-orange-400">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">Flujo de Pedidos y Ventas</span>
+        </div>
+        <h1 class="text-2xl font-black uppercase tracking-tight">Estación de Control de Pedidos</h1>
+      </div>
+    </div>
+
+    <!-- ACCIÓN PRIMARIA -->
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        data-bs-toggle="modal" 
+        data-bs-target="#modalNuevoPedido"
+        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition cursor-pointer shrink-0"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+        <span>Nuevo Pedido</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- TABLERO KANBAN DE 3 COLUMNAS PRINCIPALES -->
+  <main class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+
+    <!-- COLUMNA 1: PENDIENTES (SIN PAGO / CON TIMER Y ACCIONES DIRECTAS) -->
+    <div class="bg-slate-200/70 p-4 rounded-2xl border border-slate-300 flex flex-col max-h-[calc(100vh-220px)]">
+      <div class="flex flex-col gap-2 mb-3 pb-2 border-b-2 border-amber-500">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+            <h2 class="text-xs font-black uppercase text-slate-800 tracking-wider">1. Pendientes de Pago</h2>
+          </div>
+          <span class="px-2 py-0.5 bg-amber-200 text-amber-900 font-mono text-[11px] font-bold rounded-full" id="badgeColPendiente">0</span>
+        </div>
+        <!-- Filtro Individual para Columna Pendientes -->
+        <input 
+          type="text" 
+          placeholder="Filtrar pendientes..." 
+          class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-amber-500"
+          onkeyup="filtrarColumna('col-PENDIENTE', this.value)"
+        >
+      </div>
+
+      <div class="space-y-3 overflow-y-auto pr-1 kanban-scroll flex-1" id="col-PENDIENTE">
+        {% for pedido in pedidos %}
+          {% if pedido.estado_pedido|upper == 'PENDIENTE' %}
+            {% include 'includes/tarjeta_pedido.html' with pedido=pedido bg_border="border-l-amber-500" %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- COLUMNA 2: EN PROCESO (PAGO REPORTADO / ESPERANDO VALIDACIÓN) -->
+    <div class="bg-slate-200/70 p-4 rounded-2xl border border-slate-300 flex flex-col max-h-[calc(100vh-220px)]">
+      <div class="flex flex-col gap-2 mb-3 pb-2 border-b-2 border-blue-500">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+            <h2 class="text-xs font-black uppercase text-slate-800 tracking-wider">2. En Proceso / Por Verificar</h2>
+          </div>
+          <span class="px-2 py-0.5 bg-blue-200 text-blue-900 font-mono text-[11px] font-bold rounded-full" id="badgeColProceso">0</span>
+        </div>
+        <!-- Filtro Individual para Columna En Proceso -->
+        <input 
+          type="text" 
+          placeholder="Filtrar en proceso..." 
+          class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
+          onkeyup="filtrarColumna('col-PROCESO', this.value)"
+        >
+      </div>
+
+      <div class="space-y-3 overflow-y-auto pr-1 kanban-scroll flex-1" id="col-PROCESO">
+        {% for pedido in pedidos %}
+          {% if pedido.estado_pedido|upper == 'EN_PROCESO' or pedido.estado_pedido|upper == 'EN PROCESO' %}
+            {% include 'includes/tarjeta_pedido.html' with pedido=pedido bg_border="border-l-blue-500" %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- COLUMNA 3: COMPLETADOS -->
+    <div class="bg-slate-200/70 p-4 rounded-2xl border border-slate-300 flex flex-col max-h-[calc(100vh-220px)]">
+      <div class="flex flex-col gap-2 mb-3 pb-2 border-b-2 border-emerald-500">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <h2 class="text-xs font-black uppercase text-slate-800 tracking-wider">3. Completados</h2>
+          </div>
+          <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 font-mono text-[11px] font-bold rounded-full" id="badgeColCompletado">0</span>
+        </div>
+        <!-- Filtro Individual para Columna Completados -->
+        <input 
+          type="text" 
+          placeholder="Filtrar completados..." 
+          class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-500"
+          onkeyup="filtrarColumna('col-COMPLETADO', this.value)"
+        >
+      </div>
+
+      <div class="space-y-3 overflow-y-auto pr-1 kanban-scroll flex-1" id="col-COMPLETADO">
+        {% for pedido in pedidos %}
+          {% if pedido.estado_pedido|upper == 'COMPLETADO' %}
+            {% include 'includes/tarjeta_pedido.html' with pedido=pedido bg_border="border-l-emerald-500 opacity-95" %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+  </main>
+
+  <!-- SECCIÓN DESPLEGABLE DE PEDIDOS CANCELADOS / INVALIDADOS -->
+  <section class="mt-8">
+    <details class="bg-slate-200/80 rounded-2xl border border-slate-300 overflow-hidden group">
+      <summary class="flex items-center justify-between p-4 bg-slate-300/60 cursor-pointer select-none font-black text-xs uppercase text-slate-700 hover:bg-slate-300 transition">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+          <span>Historial de Pedidos Cancelados / Expirados</span>
+          <span class="px-2 py-0.5 bg-rose-200 text-rose-900 font-mono text-[10px] rounded-full" id="badgeColCancelado">0</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <input 
+            type="text" 
+            placeholder="Filtrar cancelados..." 
+            class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-rose-500 font-normal"
+            onclick="event.stopPropagation()"
+            onkeyup="filtrarColumna('col-CANCELADO', this.value)"
+          >
+          <svg class="w-5 h-5 transition-transform group-open:rotate-180 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </summary>
+
+      <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-96 overflow-y-auto kanban-scroll" id="col-CANCELADO">
+        {% for pedido in pedidos %}
+          {% if pedido.estado_pedido|upper == 'CANCELADO' %}
+            {% include 'includes/tarjeta_pedido.html' with pedido=pedido bg_border="border-l-rose-500 opacity-75" %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </details>
+  </section>
+
+</div>
+
+<!-- MODAL NUEVO PEDIDO -->
+<div class="modal fade" id="modalNuevoPedido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <h3 class="text-sm font-black uppercase tracking-widest">Crear Nuevo Pedido</h3>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+      <form id="formCrearPedido" action="{% url 'procesar_compra' %}" method="POST" class="p-6 space-y-4">
+        {% csrf_token %}
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Cliente</label>
+            <select name="cedula_usuario" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-orange-500 outline-none" required>
+              <option value="">Seleccione un cliente...</option>
+              {% for u in usuarios %}
+                <option value="{{ u.cedula|default:u.cedula_usuario }}">{{ u.get_full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Tipo de Entrega</label>
+            <select name="tipo_entrega" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-orange-500 outline-none">
+              <option value="Retiro">Retiro en Tienda</option>
+              <option value="Delivery">Envío a Domicilio (Delivery)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-700 uppercase mb-1">Dirección de Entrega</label>
+            <textarea name="direccion_envio" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Requerida si selecciona Delivery"></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2 border-t border-slate-200">
+          <button type="button" data-bs-dismiss="modal" class="px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase bg-orange-500 text-white hover:bg-orange-600 transition shadow-lg shadow-orange-500/20">Generar Pedido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN DE ÍTEMS Y REPUESTOS -->
+<div class="modal fade" id="modalGestionItems" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+      <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+        <div>
+          <h3 class="text-sm font-black uppercase tracking-widest">Cargar Repuestos y Servicios</h3>
+          <p id="gestionCodPedido" class="text-xs font-mono text-orange-400"></p>
+        </div>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <form id="formAgregarItem" class="bg-slate-50 p-4 rounded-xl border-2 border-slate-200 space-y-3">
+          <h4 class="text-xs font-black uppercase text-slate-800 tracking-wider">Añadir Componente o Servicio</h4>
+          
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-3">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Tipo de Carga</label>
+              <select id="itemTipo" name="tipo" onchange="cambiarTipoItem(this.value)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold">
+                <option value="producto">Producto / Repuesto</option>
+                <option value="servicio">Servicio de Taller</option>
+                <option value="manual">Descripción Manual</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-4" id="contenedorSeleccion">
+              <label id="lblSeleccionItem" class="block text-[10px] font-black uppercase text-slate-600 mb-1">Seleccionar Repuesto</label>
+              <select id="itemIdSeleccion" name="id_item" onchange="alSeleccionarItem(this)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-4 hidden" id="contenedorManual">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Descripción Manual</label>
+              <input type="text" id="itemManual" name="descripcion_manual" placeholder="Ej: Servicio de instalación especial" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs">
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Cant.</label>
+              <input type="number" id="itemCantidad" name="cantidad" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono">
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-black uppercase text-slate-600 mb-1">Precio ($)</label>
+              <input type="number" step="0.01" id="itemPrecio" name="precio_unitario" value="0.00" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-700 outline-none">
+            </div>
+
+            <div class="md:col-span-1">
+              <button type="submit" class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-black uppercase shadow-sm transition">
+                + Add
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-slate-900 text-white font-black uppercase">
+              <tr>
+                <th class="p-3">Tipo</th>
+                <th class="p-3">Descripción</th>
+                <th class="p-3 text-center">Cant.</th>
+                <th class="p-3 text-right">Precio U.</th>
+                <th class="p-3 text-right">Subtotal</th>
+                <th class="p-3 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaGestionItems" class="divide-y divide-slate-100 font-medium"></tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+          <button type="button" data-bs-dismiss="modal" onclick="location.reload()" class="px-4 py-2 bg-slate-200 text-slate-800 text-xs font-bold rounded-xl hover:bg-slate-300">
+            Cerrar y Actualizar
+          </button>
+          <div class="text-right">
+            <span class="text-xs font-bold text-slate-500 uppercase">Total Orden:</span>
+            <span id="gestionTotalModal" class="text-xl font-black font-mono text-orange-600 ml-2">$0.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UNIFICADO DETALLE DEL PEDIDO -->
+<div class="modal fade" id="modalDetallePedido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-2xl rounded-2xl overflow-hidden">
+      <div class="modal-header bg-slate-900 text-white p-4">
+        <h5 class="modal-title font-bold text-sm tracking-wider" id="detCodigo">#000000</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-5 space-y-4">
+        <!-- Información General -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div>
+            <p class="mb-1"><strong>Cliente:</strong> <span id="detCliente"></span></p>
+            <p class="mb-1"><strong>Fecha:</strong> <span id="detFecha"></span></p>
+            <p class="mb-1"><strong>Tipo Entrega:</strong> <span id="detTipoEntrega" class="px-2 py-0.5 rounded font-bold uppercase bg-slate-200 text-slate-800"></span></p>
+            <div id="detDireccionWrapper" style="display: none;" class="mt-2 p-2 bg-white border rounded text-[11px]">
+              <strong>Dirección:</strong> <span id="detDireccion"></span>
+            </div>
+          </div>
+          <div>
+            <div id="detRef"></div>
+          </div>
+        </div>
+
+        <!-- Tabla de Ítems Cargados -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100 text-slate-700 font-black uppercase border-b">
+              <tr>
+                <th class="p-2">Tipo</th>
+                <th class="p-2">Ítem</th>
+                <th class="p-2 text-center">Cant.</th>
+                <th class="p-2 text-right">P. Unit</th>
+                <th class="p-2 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="detTablaItems" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <!-- Desglose de Totales e Impuestos -->
+        <div class="text-end text-xs space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <p>Base Imponible (Subtotal): <strong id="detSubtotal">$0.00</strong></p>
+          <p>IVA (16%): <strong id="detIva">$0.00</strong></p>
+          <p id="detFilaEnvio" style="display: none;">Costo Delivery: <strong id="detCostoEnvio">$0.00</strong></p>
+          <p class="text-sm font-black text-slate-900">Total Pedido ($): <strong id="detTotal" class="text-orange-600">$0.00</strong></p>
+          <p class="text-[11px] text-slate-500">Tasa Oficial BCV: <strong id="detTasa">1.0000</strong> BS/USD</p>
+          <p class="text-sm font-black text-emerald-600">Total en Bolívares: <strong id="detTotalBs">Bs. 0.00</strong></p>
+        </div>
+      </div>
+
+      <!-- ACCIONES DINÁMICAS SEGÚN EL ESTADO -->
+      <div class="modal-footer bg-slate-100 p-3 flex justify-between items-center">
+        <button type="button" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition" data-bs-dismiss="modal">
+          Cerrar
+        </button>
+
+        <div id="accionesAdminPedido" class="flex gap-2">
+          <button type="button" id="btnAccionCancelar" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black uppercase rounded-xl transition shadow-sm" onclick="procesarEstadoPedido('cancelar')">
+            Cancelar Orden
+          </button>
+          <button type="button" id="btnAccionAprobar" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase rounded-xl transition shadow-sm" onclick="procesarEstadoPedido('aprobar')">
+            Aprobar y Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+let pedidoActualUUID = null;
+let currentCodPedido = null;
+let productosCache = [];
+let serviciosCache = [];
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    cargarProductos();
+    cargarServicios();
+    actualizarConteoColumnas();
+    iniciarContadoresExpiracion();
+});
+
+function actualizarConteoColumnas() {
+    const pend = $('#col-PENDIENTE > div').length;
+    const proc = $('#col-PROCESO > div').length;
+    const comp = $('#col-COMPLETADO > div').length;
+    const canc = $('#col-CANCELADO > div').length;
+
+    $('#badgeColPendiente').text(pend);
+    $('#badgeColProceso').text(proc);
+    $('#badgeColCompletado').text(comp);
+    $('#badgeColCancelado').text(canc);
+}
+
+// Filtro INDIVIDUAL por columna
+function filtrarColumna(columnaId, query) {
+    const q = query.toLowerCase();
+    $(`#${columnaId} .card-pedido`).each(function() {
+        const text = $(this).text().toLowerCase();
+        if (text.includes(q)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
+
+// Contador regresivo de expiración (24 horas)
+function iniciarContadoresExpiracion() {
+    $('.timer-expiracion').each(function() {
+        const timestampIso = $(this).data('fecha');
+        if (!timestampIso) return;
+
+        const elemento = $(this);
+        const fechaCreacion = new Date(timestampIso);
+        const fechaExpiracion = new Date(fechaCreacion.getTime() + (24 * 60 * 60 * 1000));
+
+        function actualizarTimer() {
+            const ahora = new Date();
+            const diferenciaMs = fechaExpiracion - ahora;
+
+            if (diferenciaMs <= 0) {
+                elemento.text('Expirado').removeClass('bg-amber-100 text-amber-800 bg-rose-100 text-rose-800').addClass('bg-slate-900 text-white');
+                return;
+            }
+
+            const horas = Math.floor(diferenciaMs / (1000 * 60 * 60));
+            const minutos = Math.floor((diferenciaMs % (1000 * 60 * 60)) / (1000 * 60));
+
+            elemento.text(`Vence en: ${horas}h ${minutos}m`);
+
+            if (horas < 2) {
+                elemento.removeClass('bg-amber-100 text-amber-800').addClass('bg-rose-100 text-rose-800 animate-pulse');
+            }
+        }
+
+        actualizarTimer();
+        setInterval(actualizarTimer, 60000);
+    });
+}
+
+/* Lógica AJAX para Productos y Servicios */
+async function cargarProductos() {
+    try {
+        const res = await fetch('/pedidos/api/productos/');
+        if (res.ok) productosCache = await res.json();
+    } catch (e) { console.error(e); }
+}
+
+async function cargarServicios() {
+    try {
+        const res = await fetch('/pedidos/api/servicios/');
+        if (res.ok) serviciosCache = await res.json();
+    } catch (e) { console.error(e); }
+}
+
+function poblarSelectItems(lista) {
+    const select = document.getElementById('itemIdSeleccion');
+    select.innerHTML = '<option value="">Seleccione...</option>';
+    lista.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id || item.cod_servicio || item.pk;
+        option.textContent = item.nombre || item.nom_servicio || item.descripcion;
+        const precio = item.precio || item.precio_base || item.costo || 0;
+        option.setAttribute('data-precio', precio);
+        select.appendChild(option);
+    });
+}
+
+function alSeleccionarItem(selectEl) {
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    if (!selectedOption) return;
+    const precio = selectedOption.getAttribute('data-precio');
+    if (precio !== null && selectedOption.value !== '') {
+        $('#itemPrecio').val(parseFloat(precio).toFixed(2));
+    } else {
+        $('#itemPrecio').val('0.00');
+    }
+}
+
+function cambiarTipoItem(tipo) {
+    if (tipo === 'manual') {
+        $('#contenedorSeleccion').addClass('hidden');
+        $('#contenedorManual').removeClass('hidden');
+        $('#itemPrecio').prop('readonly', false).removeClass('bg-slate-100 text-slate-700').addClass('bg-white text-slate-900').val('0.00');
+    } else {
+        $('#contenedorManual').addClass('hidden');
+        $('#contenedorSeleccion').removeClass('hidden');
+        $('#itemPrecio').prop('readonly', true).removeClass('bg-white text-slate-900').addClass('bg-slate-100 text-slate-700').val('0.00');
+
+        if (tipo === 'servicio') {
+            $('#lblSeleccionItem').text('Seleccionar Servicio');
+            poblarSelectItems(serviciosCache);
+        } else {
+            $('#lblSeleccionItem').text('Seleccionar Repuesto');
+            poblarSelectItems(productosCache);
+        }
+    }
+}
+
+function abrirModalGestionItems(codPedido) {
+    pedidoActualUUID = codPedido;
+    $('#gestionCodPedido').text(`#${codPedido}`);
+    cargarDetallesGestion(codPedido);
+    new bootstrap.Modal(document.getElementById('modalGestionItems')).show();
+}
+
+function cargarDetallesGestion(codPedido) {
+    const url = "{% url 'pedido_api' cod_pedido='00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', codPedido);
+    $.get(url, function(res) {
+        if (res.status === 'success') {
+            const data = res.data;
+            $('#gestionTotalModal').text(`$${parseFloat(data.total).toFixed(2)}`);
+
+            let html = '';
+            if (data.detalles && data.detalles.length > 0) {
+                data.detalles.forEach(d => {
+                    html += `
+                        <tr>
+                            <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold uppercase">${d.tipo}</span></td>
+                            <td class="p-3 font-bold">${d.item_nombre || ''} ${d.descripcion_manual ? `<br><small class="text-slate-400">${d.descripcion_manual}</small>` : ''}</td>
+                            <td class="p-3 text-center font-mono">${d.cantidad}</td>
+                            <td class="p-3 text-right font-mono">$${parseFloat(d.precio_unitario).toFixed(2)}</td>
+                            <td class="p-3 text-right font-mono font-bold">$${parseFloat(d.subtotal).toFixed(2)}</td>
+                            <td class="p-3 text-center">
+                                <button type="button" onclick="eliminarItem(${d.id_detalle})" class="p-1 text-red-500 hover:bg-red-50 rounded" title="Eliminar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Sin ítems cargados en esta orden.</td></tr>`;
+            }
+            $('#tablaGestionItems').html(html);
+        }
+    });
+}
+
+$('#formAgregarItem').on('submit', function(e) {
+    e.preventDefault();
+    if (!pedidoActualUUID) return;
+    const url = "{% url 'agregar_detalle_api' cod_pedido='00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', pedidoActualUUID);
+    $.post(url, $(this).serialize()).done(function(res) {
+        if (res.status === 'success') {
+            cargarDetallesGestion(pedidoActualUUID);
+            $('#itemManual').val('');
+            $('#itemCantidad').val(1);
+            $('#itemPrecio').val('0.00');
+            $('#itemIdSeleccion').val('');
+        }
+    }).fail(function(xhr) {
+        const error = xhr.responseJSON ? xhr.responseJSON.message : 'Error al guardar ítem';
+        Swal.fire('Error', error, 'error');
+    });
+});
+
+function eliminarItem(idDetalle) {
+    const url = "{% url 'eliminar_detalle_api' id_detalle=0 %}".replace('0', idDetalle);
+    $.post(url, function(res) {
+        if (res.status === 'success') cargarDetallesGestion(pedidoActualUUID);
+    });
+}
+
+/* Modal Unificado Ver Detalle */
+function verDetallePedido(codPedido) {
+    currentCodPedido = codPedido;
+    const url = "{% url 'pedido_api' cod_pedido='00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', codPedido);
+    
+    $.get(url, function(res) {
+        if (res.status === 'success') {
+            const data = res.data;
+            
+            $('#detCodigo').text(`#${data.cod_pedido}`);
+            $('#detCliente').text(`${data.cliente_nombre || 'N/A'} (${data.cliente_cedula || 'N/A'})`);
+            $('#detFecha').text(data.fecha_pedido || 'N/A');
+            
+            const total = parseFloat(data.total) || 0;
+            const subtotal = total / 1.16;
+            const montoIva = total - subtotal;
+
+            $('#detSubtotal').text(`$${subtotal.toFixed(2)}`);
+            $('#detIva').text(`$${montoIva.toFixed(2)}`);
+            $('#detTotal').text(`$${total.toFixed(2)}`);
+
+            $('#detTipoEntrega').text(data.tipo_entrega_display || data.tipo_entrega || 'Retiro');
+            if (data.es_delivery && data.direccion_envio) {
+                $('#detDireccion').text(data.direccion_envio);
+                $('#detDireccionWrapper').show();
+            } else {
+                $('#detDireccionWrapper').hide();
+            }
+
+            const costoEnvio = parseFloat(data.costo_envio) || 0;
+            if (costoEnvio > 0) {
+                $('#detCostoEnvio').text(`$${costoEnvio.toFixed(2)}`);
+                $('#detFilaEnvio').show();
+            } else {
+                $('#detFilaEnvio').hide();
+            }
+
+            const tasaCambio = parseFloat(data.tasa_cambio) || 1;
+            $('#detTasa').text(tasaCambio.toFixed(4));
+            const totalBs = parseFloat(data.total_bolivares) || (total * tasaCambio);
+            $('#detTotalBs').text(`Bs. ${totalBs.toFixed(2)}`);
+            
+            // Renderizado dinámico según Pago y Estado
+            if (data.pago) {
+                const p = data.pago;
+                let htmlPago = `
+                    <div class="text-xs space-y-1 bg-white p-2 rounded border border-slate-200">
+                        <div><strong>Método:</strong> ${p.metodo_pago}</div>
+                        <div><strong>Banco:</strong> ${p.banco_origen || 'N/A'}</div>
+                        <div><strong>Ref:</strong> <span class="font-mono font-bold">${p.referencia || 'N/A'}</span></div>
+                `;
+                if (p.comprobante_url) {
+                    htmlPago += `
+                        <div class="mt-1">
+                            <a href="${p.comprobante_url}" target="_blank" class="text-blue-600 font-bold underline">
+                                Ver Comprobante Adjunto
+                            </a>
+                        </div>
+                    `;
+                }
+                htmlPago += `</div>`;
+                $('#detRef').html(htmlPago);
+            } else {
+                $('#detRef').html('<div class="p-2 bg-amber-50 border border-amber-200 text-amber-800 rounded text-xs font-semibold">Sin comprobante de pago reportado.</div>');
+            }
+
+            // Renderizar Ítems
+            let htmlItems = '';
+            if (data.detalles && data.detalles.length > 0) {
+                data.detalles.forEach(d => {
+                    htmlItems += `
+                        <tr>
+                            <td class="p-2 border-b"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold uppercase">${d.tipo}</span></td>
+                            <td class="p-2 border-b font-bold">${d.item_nombre || ''}</td>
+                            <td class="p-2 border-b text-center font-mono">${d.cantidad}</td>
+                            <td class="p-2 border-b text-right font-mono">$${parseFloat(d.precio_unitario).toFixed(2)}</td>
+                            <td class="p-2 border-b text-right font-mono font-bold">$${parseFloat(d.subtotal).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                htmlItems = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Sin ítems en el pedido.</td></tr>`;
+            }
+            $('#detTablaItems').html(htmlItems);
+
+            // Control Dinámico de Botones según Estado
+            const estadoUpper = (data.estado_pedido || '').toUpperCase();
+            if (estadoUpper === 'PENDIENTE') {
+                $('#accionesAdminPedido').show();
+                $('#btnAccionAprobar').hide(); // No se puede aprobar sin reporte de pago
+                $('#btnAccionCancelar').show();
+            } else if (estadoUpper === 'EN_PROCESO' || estadoUpper === 'EN PROCESO') {
+                $('#accionesAdminPedido').show();
+                $('#btnAccionAprobar').show();
+                $('#btnAccionCancelar').show();
+            } else {
+                $('#accionesAdminPedido').hide(); // Completado o Cancelado son Read-Only
+            }
+
+            new bootstrap.Modal(document.getElementById('modalDetallePedido')).show();
+        }
+    });
+}
+
+function procesarEstadoPedido(accion) {
+    if (!currentCodPedido) return;
+
+    const confirmMsg = accion === 'aprobar' 
+        ? "¿Confirmar y aprobar este pedido? El stock se actualizará y la venta quedará asentada." 
+        : "¿Seguro que deseas cancelar este pedido? Se liberará el stock reservado.";
+
+    if (!confirm(confirmMsg)) return;
+
+    const url = "{% url 'cambiar_estado_pedido' cod_pedido='00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', currentCodPedido);
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        data: { 'accion': accion },
+        success: function(res) {
+            if (res.status === 'success') {
+                alert(res.mensaje);
+                location.reload();
+            } else {
+                alert('Error: ' + (res.mensaje || 'Ocurrió un error'));
+            }
+        },
+        error: function(xhr) {
+            const err = xhr.responseJSON ? xhr.responseJSON.mensaje : 'Error al procesar la solicitud.';
+            alert('Error: ' + err);
+        }
+    });
+}
+
+// Cancelación rápida directa desde la tarjeta de pendientes
+function cancelarPedidoDirecto(codPedido) {
+    if (!confirm("¿Deseas cancelar inmediatamente este pedido pendiente?")) return;
+    currentCodPedido = codPedido;
+    procesarEstadoPedido('cancelar');
+}
+</script>
+{% endblock %}

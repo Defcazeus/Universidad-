@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel Web - Galería Dinámica{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+  <!-- HEADER MODULAR -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Gestión del Landing</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Galería Dinámica</h1>
+      <p class="text-xs text-slate-400 font-medium">Administra las imágenes y contenido visual de la cara pública del taller.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <a
+        href="{% url 'portal_web' %}"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <span>Configuración General</span>
+      </a>
+
+      <a
+        href="{% url 'noticias_promociones' %}"
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <span>Noticias y Promociones</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO: GALERÍA DINÁMICA -->
+  <div class="row gap-4 justify-content-center">
+    <div class="col-md-4 bg-white p-4" style="border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.05);">
+      <h4 class="mb-3" style="font-weight:700;">Subir Imagen</h4>
+      <form method="POST" action="" enctype="multipart/form-data" class="p-0 shadow-none">
+        {% csrf_token %}
+        <input type="hidden" name="action_portal" value="nueva_foto">
+
+        <label class="form-label fw-semibold">Pie de Foto / Título (Opcional)</label>
+        <input type="text" name="titulo_foto" placeholder="Ej: Fosa de Alineación computarizada" class="mb-3">
+
+        <label class="form-label fw-semibold">Seleccionar Archivo de Foto</label>
+        <input type="file" name="archivo_imagen" accept="image/*" class="form-control p-2 mb-3" style="border:1px solid #ddd;" required>
+
+        <button type="submit" class="btn btn-success w-100" style="background-color:var(--naranja); border:none;"><i class="bi bi-upload me-2"></i>Montar a la Galería</button>
+      </form>
+    </div>
+
+    <div class="col-md-7 bg-white p-4" style="border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.05);">
+      <h4 class="mb-4" style="font-weight:700;">Fotos en el Servidor</h4>
+      <div class="row g-3">
+        {% for img in imagenes %}
+        <div class="col-md-4 text-center">
+          <div class="border p-2 position-relative" style="border-radius:8px;">
+            <img src="{{ img.url_imagen.url }}" class="img-fluid" style="height:120px; object-fit:cover; border-radius:5px; width:100%;">
+            <small class="d-block text-muted mt-1 fw-bold truncate">{{ img.titulo|default:"Sin título" }}</small>
+          </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted p-4">No hay fotografías cargadas en la galería multimedia aún.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

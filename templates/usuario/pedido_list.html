@@ -1,0 +1,457 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Compras y Pedidos - Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  /* Personalización de scrollbars para el flujo de columnas */
+  .kanban-scroll::-webkit-scrollbar {
+    height: 8px;
+    width: 6px;
+  }
+  .kanban-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+  }
+  .kanban-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+  }
+  .kanban-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1600px] mx-auto px-4 py-6 space-y-6 font-sans text-slate-900 bg-slate-100 min-h-screen">
+
+  <!-- TOP BAR / COMMAND CENTER HEADER CLIENTE -->
+  <header class="bg-slate-900 text-white rounded-2xl p-5 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-4 border-orange-500">
+    <div class="flex items-center gap-4">
+      <div class="p-3 bg-orange-500/20 border border-orange-500/40 rounded-xl text-orange-400">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">Portal de Atención al Cliente</span>
+        </div>
+        <h1 class="text-2xl font-black uppercase tracking-tight">Mis Compras y Pedidos</h1>
+        <p class="text-xs text-slate-400">Gestiona tus pagos pendientes y consulta el estado de tus órdenes en tiempo real.</p>
+      </div>
+    </div>
+
+    <!-- Barra de Búsqueda Rápida del Cliente -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <div class="relative min-w-[280px]">
+        <input 
+          type="text" 
+          id="userSearch" 
+          placeholder="Buscar por código o repuesto..." 
+          class="w-full pl-9 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition"
+          onkeyup="filtrarTarjetasUsuario(this.value)"
+        >
+        <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- KANBAN BOARD / VISTA DE COMPRAS DEL CLIENTE -->
+  <main class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+
+    <!-- COLUMNA 1: PENDIENTES POR PAGAR -->
+    <div class="bg-slate-200/70 p-4 rounded-2xl border border-slate-300 flex flex-col max-h-[calc(100vh-220px)]">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-amber-400">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+          <h2 class="text-xs font-black uppercase text-slate-800 tracking-wider">1. Pendientes por Pagar</h2>
+        </div>
+        <span class="px-2 py-0.5 bg-amber-200 text-amber-900 font-mono text-[11px] font-bold rounded-full" id="badgeUserPendiente">{{ pedidos_pendientes.count|default:"0" }}</span>
+      </div>
+
+      <div class="space-y-3 overflow-y-auto pr-1 kanban-scroll flex-1" id="col-USER-PENDIENTE">
+        {% for p in pedidos_pendientes %}
+          <div class="card-pedido bg-white p-4 rounded-xl border-l-4 border-l-amber-500 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+              <span class="font-mono text-xs font-black text-slate-900">#{{ p.cod_pedido|stringformat:".8s" }}</span>
+              <span class="text-[10px] font-mono text-slate-400">{{ p.fecha_pedido|date:"d/m/Y H:i" }}</span>
+            </div>
+
+            <div class="flex justify-between items-end py-1">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Total a Pagar:</span>
+                <span class="text-base font-black font-mono text-slate-900">${{ p.total }}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Monto en Bolívares:</span>
+                <span class="text-xs font-bold font-mono text-emerald-600">Bs. {{ p.total_bolivares }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+              <button type="button" onclick="verDetalleCliente('{{ p.cod_pedido }}')" class="text-xs font-bold text-slate-600 hover:text-slate-900 hover:underline">
+                Ver Detalles
+              </button>
+              
+              <button 
+                type="button" 
+                onclick="abrirModalReportarPago('{{ p.cod_pedido }}', '{{ p.total }}', '{{ p.total_bolivares }}')"
+                class="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-[11px] font-black uppercase rounded-xl shadow-md transition flex items-center gap-1"
+              >
+                <span>💳 Reportar Pago</span>
+              </button>
+            </div>
+          </div>
+        {% empty %}
+          <div class="p-6 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs text-slate-400">
+            No tienes pedidos pendientes por pagar.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- COLUMNA 2: EN VERIFICACIÓN / TALLER -->
+    <div class="bg-slate-200/70 p-4 rounded-2xl border border-slate-300 flex flex-col max-h-[calc(100vh-220px)]">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-blue-500">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+          <h2 class="text-xs font-black uppercase text-slate-800 tracking-wider">2. En Verificación / Proceso</h2>
+        </div>
+        <span class="px-2 py-0.5 bg-blue-200 text-blue-900 font-mono text-[11px] font-bold rounded-full" id="badgeUserProceso">0</span>
+      </div>
+
+      <div class="space-y-3 overflow-y-auto pr-1 kanban-scroll flex-1" id="col-USER-PROCESO">
+        {% for p in pedidos_historial %}
+          {% if p.estado_pedido|upper == 'EN_PROCESO' or p.estado_pedido|upper == 'EN PROCESO' %}
+            <div class="card-pedido bg-white p-4 rounded-xl border-l-4 border-l-blue-500 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition">
+              <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                <span class="font-mono text-xs font-black text-slate-900">#{{ p.cod_pedido|stringformat:".8s" }}</span>
+                <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold uppercase text-[10px]">En Verificación</span>
+              </div>
+
+              <div class="flex justify-between items-center py-1">
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Total:</span>
+                  <span class="text-base font-black font-mono text-slate-900">${{ p.total }}</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-400">{{ p.fecha_pedido|date:"d/m/Y H:i" }}</span>
+              </div>
+
+              <div class="flex justify-end pt-2 border-t border-slate-100">
+                <button type="button" onclick="verDetalleCliente('{{ p.cod_pedido }}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition">
+                  Ver Resumen
+                </button>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- COLUMNA 3: COMPLETADOS / HISTORIAL -->
+    <div class="bg-slate-200/70 p-4 rounded-2xl border border-slate-300 flex flex-col max-h-[calc(100vh-220px)]">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-emerald-500">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+          <h2 class="text-xs font-black uppercase text-slate-800 tracking-wider">3. Historial de Compras</h2>
+        </div>
+        <span class="px-2 py-0.5 bg-emerald-200 text-emerald-900 font-mono text-[11px] font-bold rounded-full" id="badgeUserCompletado">0</span>
+      </div>
+
+      <div class="space-y-3 overflow-y-auto pr-1 kanban-scroll flex-1" id="col-USER-COMPLETADO">
+        {% for p in pedidos_historial %}
+          {% if p.estado_pedido|upper == 'COMPLETADO' or p.estado_pedido|upper == 'CANCELADO' or p.estado_pedido|upper == 'RECIBIDO' %}
+            <div class="card-pedido bg-white p-4 rounded-xl border-l-4 {% if p.estado_pedido|upper == 'CANCELADO' %}border-l-rose-500{% else %}border-l-emerald-500{% endif %} border border-slate-200 shadow-sm space-y-3 opacity-90 hover:opacity-100 transition">
+              <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                <span class="font-mono text-xs font-black text-slate-900">#{{ p.cod_pedido|stringformat:".8s" }}</span>
+                {% if p.estado_pedido|upper == 'COMPLETADO' or p.estado_pedido|upper == 'RECIBIDO' %}
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold uppercase text-[10px]">Completado</span>
+                {% elif p.estado_pedido|upper == 'CANCELADO' %}
+                  <span class="px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-bold uppercase text-[10px]">Cancelado</span>
+                {% endif %}
+              </div>
+
+              <div class="flex justify-between items-center py-1">
+                <div>
+                  <span class="text-[10px] text-slate-400 uppercase font-bold block">Monto Final:</span>
+                  <span class="text-base font-black font-mono text-slate-900">${{ p.total }}</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-400">{{ p.fecha_pedido|date:"d/m/Y H:i" }}</span>
+              </div>
+
+              <div class="flex justify-end pt-2 border-t border-slate-100">
+                <button type="button" onclick="verDetalleCliente('{{ p.cod_pedido }}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition">
+                  Ver Resumen
+                </button>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL REPORTAR PAGO -->
+<div class="modal fade" id="modalReportarPago" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-900">
+      <div class="p-4 bg-slate-900 text-white flex justify-between items-center border-b-2 border-slate-900">
+        <h5 class="modal-title font-black text-xs uppercase tracking-widest">Notificar Reporte de Pago</h5>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+      <form id="formReportarPago" enctype="multipart/form-data" class="p-5 space-y-4 bg-white">
+        {% csrf_token %}
+        <input type="hidden" id="pagoCodPedido" name="cod_pedido">
+
+        <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs space-y-1">
+          <p class="text-slate-600">Monto USD: <strong id="pagoMontoUsd" class="font-mono text-slate-900">$0.00</strong></p>
+          <p class="text-slate-600">Monto exacto a Transferir: <strong id="pagoMontoBs" class="font-mono text-emerald-700">Bs. 0.00</strong></p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-700 mb-1">Método de Pago</label>
+          <select name="metodo_pago" class="w-full p-2 border border-slate-200 rounded-xl text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-orange-500 outline-none" required>
+            <option value="Pago Movil">Pago Móvil</option>
+            <option value="Transferencia">Transferencia Bancaria</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-700 mb-1">Banco Origen</label>
+          <input type="text" name="banco_origen" placeholder="Ej: Banesco, Banco de Venezuela" class="w-full p-2 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-orange-500 outline-none" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-700 mb-1">Número de Referencia</label>
+          <input type="text" name="numero_referencia" placeholder="Ej: 849302" class="w-full p-2 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-orange-500 outline-none" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-700 mb-1">Comprobante / Capture (Opcional)</label>
+          <input type="file" name="comprobante_img" accept="image/*" class="w-full text-xs text-slate-500">
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+          <button type="button" data-bs-dismiss="modal" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase rounded-xl transition shadow-lg shadow-orange-500/20">Enviar Reporte</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE / RESUMEN PEDIDO PARA CLIENTE -->
+<div class="modal fade" id="modalDetalleCliente" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-2xl border-4 border-slate-900 shadow-2xl overflow-hidden bg-white">
+      <div class="p-4 bg-slate-900 text-white flex justify-between items-center border-b-2 border-slate-900">
+        <h5 class="modal-title font-black text-xs uppercase tracking-widest" id="userDetCodigo">#000000</h5>
+        <button type="button" class="text-slate-400 hover:text-white text-xl" data-bs-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body p-5 space-y-4">
+        <!-- Info general -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="space-y-1">
+            <p><strong class="text-slate-700">Fecha de Orden:</strong> <span id="userDetFecha" class="font-mono text-slate-600"></span></p>
+            <p><strong class="text-slate-700">Tipo de Entrega:</strong> <span id="userDetTipoEntrega" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 text-slate-800"></span></p>
+            <div id="userDetDireccionWrapper" style="display: none;" class="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <strong class="text-slate-700 block mb-0.5">Dirección de Envío:</strong>
+              <span id="userDetDireccion" class="text-slate-600"></span>
+            </div>
+          </div>
+          <div>
+            <div id="userDetRef"></div>
+          </div>
+        </div>
+
+        <!-- Tabla de Ítems -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-slate-900 text-white font-black uppercase">
+              <tr>
+                <th class="p-2.5">Tipo</th>
+                <th class="p-2.5">Descripción / Ítem</th>
+                <th class="p-2.5 text-center">Cant.</th>
+                <th class="p-2.5 text-right">P. Unit ($)</th>
+                <th class="p-2.5 text-right">Subtotal ($)</th>
+              </tr>
+            </thead>
+            <tbody id="userDetTablaItems" class="divide-y divide-slate-100 font-medium"></tbody>
+          </table>
+        </div>
+
+        <!-- Desglose de Totales -->
+        <div class="text-right text-xs space-y-1 pt-2 border-t border-slate-200 font-medium">
+          <p class="text-slate-600">Base Imponible (Subtotal): <strong id="userDetSubtotal" class="font-mono text-slate-900">$0.00</strong></p>
+          <p class="text-slate-600">IVA (16%): <strong id="userDetIva" class="font-mono text-slate-900">$0.00</strong></p>
+          <p id="userDetFilaEnvio" style="display: none;" class="text-slate-600">Costo Delivery: <strong id="userDetCostoEnvio" class="font-mono text-slate-900">$0.00</strong></p>
+          <p class="text-sm font-black uppercase text-slate-800 pt-1">Total Pedido: <strong id="userDetTotal" class="font-mono text-orange-600 text-base">$0.00</strong></p>
+          <p class="text-[10px] text-slate-400">Tasa Oficial BCV: <strong id="userDetTasa" class="font-mono">1.0000</strong> BS/USD</p>
+          <p class="text-xs font-bold text-emerald-600">Total en Bolívares: <strong id="userDetTotalBs" class="font-mono text-sm">Bs. 0.00</strong></p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button type="button" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    actualizarConteoColumnasUsuario();
+});
+
+function actualizarConteoColumnasUsuario() {
+    const proc = $('#col-USER-PROCESO > div').length;
+    const comp = $('#col-USER-COMPLETADO > div').length;
+
+    $('#badgeUserProceso').text(proc);
+    $('#badgeUserCompletado').text(comp);
+}
+
+function filtrarTarjetasUsuario(query) {
+    const q = query.toLowerCase();
+    $('.card-pedido').each(function() {
+        const text = $(this).text().toLowerCase();
+        if (text.includes(q)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
+
+function abrirModalReportarPago(codPedido, totalUsd, totalBs) {
+    $('#pagoCodPedido').val(codPedido);
+    $('#pagoMontoUsd').text(`$${totalUsd}`);
+    $('#pagoMontoBs').text(`Bs. ${totalBs}`);
+    new bootstrap.Modal(document.getElementById('modalReportarPago')).show();
+}
+
+$('#formReportarPago').on('submit', function(e) {
+    e.preventDefault();
+    const codPedido = $('#pagoCodPedido').val();
+    const url = `/pedidos/reportar-pago/${codPedido}/`;
+    const formData = new FormData(this);
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        success: function(res) {
+            Swal.fire({
+                title: '¡Pago Reportado!',
+                text: res.mensaje || 'Tu pago ha sido registrado para verificación.',
+                icon: 'success',
+                confirmButtonColor: '#f97316'
+            }).then(() => location.reload());
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Error al reportar el pago.';
+            Swal.fire('Error', errorMsg, 'error');
+        }
+    });
+});
+
+function verDetalleCliente(codPedido) {
+    const url = "{% url 'pedido_api' cod_pedido='00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', codPedido);
+    
+    $.get(url, function(res) {
+        if (res.status === 'success') {
+            const data = res.data;
+            
+            $('#userDetCodigo').text(`#${data.cod_pedido}`);
+            $('#userDetFecha').text(data.fecha_pedido || 'N/A');
+            
+            const total = parseFloat(data.total) || 0;
+            const subtotal = total / 1.16;
+            const montoIva = total - subtotal;
+
+            $('#userDetSubtotal').text(`$${subtotal.toFixed(2)}`);
+            $('#userDetIva').text(`$${montoIva.toFixed(2)}`);
+            $('#userDetTotal').text(`$${total.toFixed(2)}`);
+
+            $('#userDetTipoEntrega').text(data.tipo_entrega_display || data.tipo_entrega || 'Retiro');
+            if (data.es_delivery && data.direccion_envio) {
+                $('#userDetDireccion').text(data.direccion_envio);
+                $('#userDetDireccionWrapper').show();
+            } else {
+                $('#userDetDireccionWrapper').hide();
+            }
+
+            const costoEnvio = parseFloat(data.costo_envio) || 0;
+            if (costoEnvio > 0) {
+                $('#userDetCostoEnvio').text(`$${costoEnvio.toFixed(2)}`);
+                $('#userDetFilaEnvio').show();
+            } else {
+                $('#userDetFilaEnvio').hide();
+            }
+
+            const tasaCambio = parseFloat(data.tasa_cambio) || 1;
+            $('#userDetTasa').text(tasaCambio.toFixed(4));
+            const totalBs = parseFloat(data.total_bolivares) || (total * tasaCambio);
+            $('#userDetTotalBs').text(`Bs. ${totalBs.toFixed(2)}`);
+            
+            // Renderizar Información del Pago si fue notificado
+            if (data.pago) {
+                const p = data.pago;
+                let htmlPago = `
+                    <div class="text-xs space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <div><strong class="text-slate-700">Método:</strong> ${p.metodo_pago}</div>
+                        <div><strong class="text-slate-700">Banco:</strong> ${p.banco_origen || 'N/A'}</div>
+                        <div><strong class="text-slate-700">Ref:</strong> <span class="font-mono font-bold text-slate-900">${p.referencia || 'N/A'}</span></div>
+                `;
+                if (p.comprobante_url) {
+                    htmlPago += `
+                        <div class="mt-1">
+                            <a href="${p.comprobante_url}" target="_blank" class="text-orange-600 font-bold underline text-[11px]">
+                                🖼️ Ver Comprobante Adjunto
+                            </a>
+                        </div>
+                    `;
+                }
+                htmlPago += `</div>`;
+                $('#userDetRef').html(htmlPago);
+            } else {
+                $('#userDetRef').html('<div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-400 italic text-[11px]">Sin reporte de pago registrado aún.</div>');
+            }
+
+            // Renderizar Ítems
+            let htmlItems = '';
+            if (data.detalles && data.detalles.length > 0) {
+                data.detalles.forEach(d => {
+                    htmlItems += `
+                        <tr>
+                            <td class="p-2.5"><span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold uppercase">${d.tipo}</span></td>
+                            <td class="p-2.5 font-bold text-slate-800">${d.item_nombre || ''}</td>
+                            <td class="p-2.5 text-center font-mono font-bold">${d.cantidad}</td>
+                            <td class="p-2.5 text-right font-mono">$${parseFloat(d.precio_unitario).toFixed(2)}</td>
+                            <td class="p-2.5 text-right font-mono font-bold text-slate-900">$${parseFloat(d.subtotal).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                htmlItems = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No hay ítems registrados en este pedido.</td></tr>`;
+            }
+            $('#userDetTablaItems').html(htmlItems);
+
+            new bootstrap.Modal(document.getElementById('modalDetalleCliente')).show();
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agenda de Citas | Serviautomotriz Fernández{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- DataTables CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<!-- Extensiones de DataTables para Botones (Excel, Imprimir) -->
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+<style>
+  .dataTables_wrapper .dataTables_length select {
+    background-color: #f8fafc;
+    border: 2px solid #cbd5e1;
+    border-radius: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  table.dataTable.no-footer {
+    border-bottom: 2px solid #e2e8f0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+
+  <!-- HEADER MODULAR -->
+  <header class="bg-slate-900 text-white rounded-2xl p-6 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Gestión de Taller</span>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight uppercase">Agenda de Citas</h1>
+      <p class="text-xs text-slate-400 font-medium">Planifica y reserva los cupos de entrada al taller para optimizar los tiempos de servicio</p>
+    </div>
+
+    <div>
+      <button 
+        type="button"
+        onclick="openModal('modalNuevaCita')" 
+        class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600 active:translate-y-0.5 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
+        <span>Programar Cita</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- PANEL DE TABLA DE CITAS -->
+  <main class="bg-white rounded-2xl border-2 border-slate-200 shadow-sm p-6 space-y-4">
+    
+    <!-- BARRA DE FILTROS Y BÚSQUEDA ADAPTADA -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div>
+        <h2 class="text-base font-extrabold text-slate-900 uppercase tracking-tight">Citas Programadas</h2>
+        <p class="text-xs text-slate-500 font-medium">Listado detallado de reservaciones e ingresos al taller</p>
+      </div>
+
+      <!-- BUSCADOR CON DESPLEGABLE DE CRITERIO -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:max-w-xl">
+        <div class="flex items-center bg-slate-100 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-orange-500 transition-all w-full">
+          <span class="px-3 text-[11px] font-black uppercase tracking-wider text-slate-600 bg-slate-200/60 border-r border-slate-200 py-2.5 shrink-0">
+            Filtro
+          </span>
+          <select id="selectCategoriaBusqueda" class="px-3 py-2 bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer border-r border-slate-200 shrink-0">
+            <option value="global" selected>Todo</option>
+            <option value="0">Código</option>
+            <option value="1">Vehículo / Placa</option>
+            <option value="2">Tipo de Servicio</option>
+            <option value="3">Fecha Entrada</option>
+            <option value="4">Estado</option>
+          </select>
+          <div class="relative w-full flex items-center">
+            <input 
+              type="text" 
+              id="inputBusquedaCustom" 
+              placeholder="Escribe para buscar..." 
+              class="w-full pl-3 pr-9 py-2 bg-transparent text-xs text-slate-900 placeholder-slate-400 font-mono outline-none"
+            >
+            <svg class="w-4 h-4 absolute right-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENEDOR DE TABLA / DATATABLE -->
+    <div class="overflow-x-auto">
+      <table id="tablaCitas" class="w-full text-left border-collapse">
+        <thead class="bg-slate-900 text-white text-xs uppercase font-mono tracking-wider">
+          <tr>
+            <th class="p-3 rounded-tl-xl">Código</th>
+            <th class="p-3">Vehículo / Placa</th>
+            <th class="p-3">Servicio Solicitado</th>
+            <th class="p-3">Fecha Entrada</th>
+            <th class="p-3">Estado</th>
+            <th class="p-3 text-center rounded-tr-xl">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+          {% for cita in citas %}
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="p-3 font-mono font-bold text-slate-900">
+                <span class="px-2 py-1 bg-slate-100 border border-slate-300 rounded-md">#{{ cita.cod_cita }}</span>
+              </td>
+              <td class="p-3">
+                <div class="font-bold text-slate-900 uppercase">
+                  {% if cita.placa %}{{ cita.placa.marca }} {{ cita.placa.modelo }}{% else %}Vehículo No Asignado{% endif %}
+                </div>
+                {% if cita.placa %}
+                  <span class="inline-block mt-0.5 px-2 py-0.5 bg-slate-900 text-amber-400 font-mono text-[10px] font-black rounded border border-slate-800 uppercase">
+                    {{ cita.placa.placa }}
+                  </span>
+                {% endif %}
+              </td>
+              <td class="p-3">
+                <span class="font-bold text-slate-800">
+                  {% if cita.id_tipo_servicio %}{{ cita.id_tipo_servicio.nombre }}{% else %}No Especificado{% endif %}
+                </span>
+              </td>
+              <td class="p-3 font-mono text-slate-800 text-[11px]">
+                {{ cita.fecha_entrada|date:"d/m/Y g:i a" }}
+              </td>
+              <td class="p-3">
+                {% if cita.estado_cita == 'Pendiente' %}
+                  <span class="text-[10px] font-mono font-extrabold px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md border border-amber-200 uppercase">
+                    Pendiente
+                  </span>
+                {% elif cita.estado_cita == 'Aprobada' %}
+                  <span class="text-[10px] font-mono font-extrabold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md border border-emerald-200 uppercase">
+                    Aprobada
+                  </span>
+                {% elif cita.estado_cita == 'Ejecutada' %}
+                  <span class="text-[10px] font-mono font-extrabold px-2.5 py-1 bg-cyan-100 text-cyan-800 rounded-md border border-cyan-200 uppercase">
+                    Terminada
+                  </span>
+                {% else %}
+                  <span class="text-[10px] font-mono font-extrabold px-2.5 py-1 bg-slate-200 text-slate-600 rounded-md border border-slate-300 uppercase">
+                    {{ cita.estado_cita }}
+                  </span>
+                {% endif %}
+              </td>
+              <td class="p-3">
+                <div class="flex items-center justify-center gap-2">
+                  <button type="button" onclick="cargarYVerCita('{{ cita.cod_cita }}')" class="p-2 hover:bg-slate-100 text-slate-600 hover:text-orange-600 rounded-lg transition cursor-pointer" title="Ver Detalles">
+                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </button>
+                  <button type="button" onclick="cargarYEditarCita('{{ cita.cod_cita }}')" class="p-2 hover:bg-slate-900 text-slate-600 hover:text-white rounded-lg border border-transparent transition cursor-pointer" title="Editar Cita">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+</div>
+
+<!-- MODAL CREAR -->
+<div id="modalNuevaCita" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Programar Nueva Cita</h3>
+      </div>
+      <button type="button" onclick="closeModal('modalNuevaCita')" class="text-slate-400 hover:text-white font-mono text-xl transition cursor-pointer">&times;</button>
+    </div>
+
+    <form method="POST" action="/admin/citas/crear/" onsubmit="return validarEnvioCrear()" class="p-6 space-y-4">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Vehículo / Placa <span class="text-red-600">*</span></label>
+        {{ form.placa }}
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Tipo de Servicio <span class="text-red-600">*</span></label>
+        {{ form.id_tipo_servicio }}
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Fecha de Entrada <span class="text-red-600">*</span></label>
+          <input type="date" name="fecha_entrada_dia" id="crear_fecha_entrada_dia" onchange="sincronizarFechaCrear()" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Hora <span class="text-red-600">*</span></label>
+          <div class="grid grid-cols-2 gap-1.5">
+            <select id="crear_hora_hrs" onchange="sincronizarFechaCrear()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="08">08 AM</option>
+              <option value="09">09 AM</option>
+              <option value="10">10 AM</option>
+              <option value="11">11 AM</option>
+              <option value="13">01 PM</option>
+              <option value="14">02 PM</option>
+              <option value="15">03 PM</option>
+              <option value="16">04 PM</option>
+            </select>
+            <select id="crear_hora_min" onchange="sincronizarFechaCrear()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="00">00m</option>
+              <option value="15">15m</option>
+              <option value="30">30m</option>
+              <option value="45">45m</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" name="fecha_entrada" id="crear_fecha_entrada_hidden">
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Motivo de Ingreso / Observaciones</label>
+        {{ form.motivo_ingreso }}
+      </div>
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('modalNuevaCita')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-orange-500 hover:bg-orange-600 text-white transition cursor-pointer">Agendar Cita</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modalEditarCita" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Modificar Cita</h3>
+      </div>
+      <button type="button" onclick="closeModal('modalEditarCita')" class="text-slate-400 hover:text-white font-mono text-xl transition cursor-pointer">&times;</button>
+    </div>
+
+    <form id="formEditarCita" method="POST" onsubmit="return validarEnvioEditar()" class="p-6 space-y-4">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Vehículo / Placa <span class="text-red-600">*</span></label>
+        <select name="placa" id="edit_placa" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white"></select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Tipo de Servicio <span class="text-red-600">*</span></label>
+        <select name="id_tipo_servicio" id="edit_id_tipo_servicio" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white"></select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Fecha de Entrada <span class="text-red-600">*</span></label>
+          <input type="date" id="edit_fecha_entrada_dia" onchange="sincronizarFechaEditar()" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Hora <span class="text-red-600">*</span></label>
+          <div class="grid grid-cols-2 gap-1.5">
+            <select id="edit_hora_hrs" onchange="sincronizarFechaEditar()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="08">08 AM</option>
+              <option value="09">09 AM</option>
+              <option value="10">10 AM</option>
+              <option value="11">11 AM</option>
+              <option value="13">01 PM</option>
+              <option value="14">02 PM</option>
+              <option value="15">03 PM</option>
+              <option value="16">04 PM</option>
+            </select>
+            <select id="edit_hora_min" onchange="sincronizarFechaEditar()" class="w-full px-2 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white cursor-pointer">
+              <option value="00">00m</option>
+              <option value="15">15m</option>
+              <option value="30">30m</option>
+              <option value="45">45m</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" name="fecha_entrada" id="edit_fecha_entrada_hidden">
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Motivo de Ingreso</label>
+        <textarea name="motivo_ingreso" id="edit_motivo_ingreso" rows="3" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white"></textarea>
+      </div>
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('modalEditarCita')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-900 hover:bg-black text-white transition cursor-pointer">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL VER DETALLE -->
+<div id="modalVerCita" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border-4 border-slate-900 overflow-hidden p-6 space-y-4">
+    <div class="flex justify-between items-start border-b-2 border-slate-100 pb-3">
+      <div>
+        <span class="inline-block px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-xs font-black rounded-md mb-2 uppercase" id="view_cod_cita">#---</span>
+        <h3 id="view_vehiculo" class="text-lg font-black uppercase text-slate-900">---</h3>
+      </div>
+      <button type="button" onclick="closeModal('modalVerCita')" class="text-slate-400 hover:text-slate-900 font-mono text-xl cursor-pointer">&times;</button>
+    </div>
+
+    <div class="space-y-3 text-xs">
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Servicio</span>
+        <p id="view_servicio" class="font-bold text-slate-800">---</p>
+      </div>
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha y Hora Programada</span>
+        <p id="view_fecha_entrada" class="font-mono font-bold text-slate-800">---</p>
+      </div>
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Motivo / Notas</span>
+        <p id="view_motivo" class="text-slate-600 italic">---</p>
+      </div>
+    </div>
+
+    <button type="button" onclick="closeModal('modalVerCita')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider rounded-xl transition cursor-pointer">Cerrar Ficha</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+
+
+
+
+<script>
+$(document).ready(function() {
+  let table = null;
+
+  // Inicialización condicional de DataTable para #tablaCitas
+  if ($('#tablaCitas tbody tr td').length > 1) {
+    table = $('#tablaCitas').DataTable({
+      "order": [[0, 'desc']],
+      "dom": "<'row'<'col-12'tr>>" + "<'row mt-4 align-items-center'<'col-md-4 text-xs text-slate-500'i><'col-md-8 text-md-end'Bp>>",
+
+      "buttons": [
+        { extend: 'print', text: 'Imprimir', className: 'px-3 py-1.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition cursor-pointer' },
+        { extend: 'excel', text: 'Exportar a Excel', className: 'px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition cursor-pointer' }
+      ],
+      "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+      "columnDefs": [{ "searchable": false, "orderable": false, "targets": [5] }] // Deshabilita orden/búsqueda en columna Acciones
+    });
+  }
+
+  // Buscador personalizado según criterio seleccionado
+  $('#inputBusquedaCustom').on('input', function() {
+    if (!table) return;
+    const col = $('#selectCategoriaBusqueda').val();
+    if (col === "global") {
+      table.search(this.value).draw();
+    } else {
+      table.columns().search(''); // Limpia búsquedas previas en columnas específicas
+      table.column(col).search(this.value).draw();
+    }
+  });
+});
+
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function sincronizarFechaCrear() {
+  const dia = document.getElementById('crear_fecha_entrada_dia').value;
+  const hrs = document.getElementById('crear_hora_hrs').value;
+  const min = document.getElementById('crear_hora_min').value;
+  if (dia) {
+    document.getElementById('crear_fecha_entrada_hidden').value = `${dia}T${hrs}:${min}`;
+  }
+}
+
+function sincronizarFechaEditar() {
+  const dia = document.getElementById('edit_fecha_entrada_dia').value;
+  const hrs = document.getElementById('edit_hora_hrs').value;
+  const min = document.getElementById('edit_hora_min').value;
+  if (dia) {
+    document.getElementById('edit_fecha_entrada_hidden').value = `${dia}T${hrs}:${min}`;
+  }
+}
+
+function validarEnvioCrear() {
+  sincronizarFechaCrear();
+  if (!document.getElementById('crear_fecha_entrada_hidden').value) {
+    alert('Por favor, selecciona una fecha válida.');
+    return false;
+  }
+  return true;
+}
+
+function validarEnvioEditar() {
+  sincronizarFechaEditar();
+  if (!document.getElementById('edit_fecha_entrada_hidden').value) {
+    alert('Por favor, selecciona una fecha válida.');
+    return false;
+  }
+  return true;
+}
+
+async function fetchCitaData(codCita) {
+  try {
+    const res = await fetch(`/admin/citas/api/${codCita}/`);
+    if (!res.ok) throw new Error();
+    const response = await res.json();
+    return response.data;
+  } catch {
+    alert("Error al comunicarse con el servidor");
+  }
+}
+
+async function cargarYVerCita(codCita) {
+  const data = await fetchCitaData(codCita);
+  if (!data) return;
+
+  document.getElementById('view_cod_cita').textContent = `#${data.cod_cita || codCita}`;
+  document.getElementById('view_vehiculo').textContent = data.placa || 'Sin Vehículo';
+  document.getElementById('view_servicio').textContent = data.nombre_servicio || 'N/A';
+  document.getElementById('view_fecha_entrada').textContent = data.fecha_entrada || 'N/A';
+  document.getElementById('view_motivo').textContent = data.motivo_ingreso || 'Sin observaciones registradas.';
+
+  openModal('modalVerCita');
+}
+
+async function cargarYEditarCita(codCita) {
+  const data = await fetchCitaData(codCita);
+  if (!data) return;
+
+  const formEditar = document.getElementById('formEditarCita');
+  if (formEditar) formEditar.action = `/admin/citas/editar/${codCita}/`;
+
+  const selectPlaca = document.getElementById('edit_placa');
+  const selectServicio = document.getElementById('edit_id_tipo_servicio');
+
+  if (selectPlaca && data.opciones_placas) {
+    selectPlaca.innerHTML = data.opciones_placas.map(item => 
+      `<option value="${item.id}" ${item.id == data.placa_id ? 'selected' : ''}>${item.label}</option>`
+    ).join('');
+  }
+
+  if (selectServicio && data.opciones_servicios) {
+    selectServicio.innerHTML = data.opciones_servicios.map(item => 
+      `<option value="${item.id}" ${item.id == data.id_tipo_servicio ? 'selected' : ''}>${item.label}</option>`
+    ).join('');
+  }
+
+  if (data.fecha_entrada) {
+    const parts = data.fecha_entrada.split('T');
+    if (parts.length === 2) {
+      document.getElementById('edit_fecha_entrada_dia').value = parts[0];
+      const timeParts = parts[1].split(':');
+      document.getElementById('edit_hora_hrs').value = timeParts[0] || '08';
+      document.getElementById('edit_hora_min').value = timeParts[1] || '00';
+    }
+  }
+
+  if (document.getElementById('edit_motivo_ingreso')) {
+    document.getElementById('edit_motivo_ingreso').value = data.motivo_ingreso || '';
+  }
+
+  sincronizarFechaEditar();
+  openModal('modalEditarCita');
+}
+</script>
+<script src="{% static 'js/validaciones.js' %}"></script>
+{% endblock %}

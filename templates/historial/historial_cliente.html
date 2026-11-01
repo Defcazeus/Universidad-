@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historial de Pedidos y Compras del Cliente - Serviautomotriz Fernández{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-2">
+    
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="border-bottom pb-2" style="color: var(--oscuro); font-weight: 800;">
+                <i class="bi bi-person-lines-fill me-2" style="color: var(--naranja);"></i>HISTORIAL COMERCIAL DE CLIENTES
+            </h2>
+            <p class="text-muted">Consulte el expediente de pedidos, transacciones monetarias y el estado de cuenta consolidado por cliente.</p>
+        </div>
+    </div>
+
+    <div class="row gap-4 justify-content-center">
+        
+        <div class="col-md-4">
+            <div class="p-4" style="background: var(--blanco); border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); border-top: 5px solid var(--naranja);">
+                
+                <div class="text-center mb-4 p-2 bg-light rounded-3 border" style="min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div>
+                        <i class="bi bi-person-badge-fill h1 d-block text-secondary mb-1"></i>
+                        <span class="fs-3 fw-black font-monospace text-dark d-block" style="letter-spacing: 1px;">@{{ cliente.username|default:cliente.first_name|lower }}</span>
+                        <small class="text-muted fw-bold">{{ cliente.first_name }} {{ cliente.last_name }}</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <span class="badge bg-light text-dark border mb-1">
+                        {% if cliente.id_rol.nombre_role %}{{ cliente.id_rol.nombre_role }}{% else %}Cliente Registrado{% endif %}
+                    </span>
+                    <h5 style="font-weight: 800; color: var(--oscuro); margin: 0;">C.I: {{ cliente.cedula_usuario }}</h5>
+                    <span class="font-monospace text-muted fw-bold d-block mt-1" style="font-size: 0.9rem;">
+                        <i class="bi bi-telephone me-1"></i> {% if cliente.cod_tel %}({{ cliente.cod_tel }}) {% endif %}{{ cliente.num_tel|default:cliente.num_tel }}
+                    </span>
+                    <span class="text-muted small d-block">
+                        <i class="bi bi-envelope me-1"></i> {{ cliente.email }}
+                    </span>
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-6">
+                        <div class="p-2 border rounded-3 bg-light">
+                            <small class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">TOTAL PEDIDOS</small>
+                            <span class="fs-5 fw-bold text-dark">{{ total_pedidos|default:"0" }} <small style="font-size: 0.75rem;">reg.</small></span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border rounded-3 bg-light">
+                            <small class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">MÉTODO REF.</small>
+                            <span class="fs-6 fw-bold text-success text-truncate d-block" title="{{ pedidos.first.metodo_pago_preferido|default:'Ninguno' }}">
+                                {{ pedidos.first.metodo_pago_preferido|default:"Ninguno" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3" style="background-color: #f8f9fa; font-size: 0.9rem;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Ubicación:</span>
+                    </div>
+                    <span class="fw-bold text-dark d-block" style="font-size: 0.85rem;">{{ cliente.direccion|default:"Guanare, Edo. Portuguesa" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="p-4 bg-white" style="border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+                <h4 class="mb-4" style="font-weight: 700; color: var(--oscuro);">Órdenes y Pedidos Procesados</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead style="background-color: var(--oscuro); color: white;">
+                            <tr>
+                                <th class="p-3">Código Pedido</th>
+                                <th class="p-3">Método Pago</th>
+                                <th class="p-3">Monto Total</th>
+                                <th class="p-3" style="width: 45%;">Detalle de Artículos / Servicios</th>
+                                <th class="p-3">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pedido in pedidos %}
+                            <tr>
+                                <td class="p-3 font-monospace fw-bold text-secondary">
+                                    #{{ pedido.cod_pedido }}<br>
+                                    <small class="text-muted fw-normal" style="font-size: 0.75rem;">{{ pedido.fecha_pedido|date:"d/m/Y" }}</small>
+                                </td>
+                                <td class="p-3">
+                                    <span class="badge bg-light text-dark border font-monospace">{{ pedido.metodo_pago_preferido }}</span>
+                                </td>
+                                <td class="p-3 font-monospace small fw-bold text-dark">${{ pedido.total }}</td>
+                                <td class="p-3">
+                                    {% for detalle in pedido.pedido_detalle_set.all %}
+                                        <div class="p-2 rounded bg-light border-start border-3 {% if detalle.id_producto %}border-warning mb-1{% else %}border-success{% endif %}">
+                                            <div class="d-flex justify-content-between small">
+                                                <span class="fw-bold text-dark">
+                                                    {% if detalle.id_producto %}
+                                                        {{ detalle.id_producto.nombre }}
+                                                    {% else %}
+                                                        {{ detalle.id_cat_servicio.nombre }}
+                                                    {% endif %}
+                                                </span>
+                                                <span class="text-muted">x{{ detalle.cantidad }} (${{ detalle.precio_unitario }})</span>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <small class="text-muted">Sin detalles registrados</small>
+                                    {% endfor %}
+                                </td>
+                                <td class="p-3">
+                                    {% if pedido.estado_pedido == 'Entregado' or pedido.estado_pedido == 'Finalizado' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                            <i class="bi bi-check-circle-fill me-1"></i> {{ pedido.estado_pedido }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                            <i class="bi bi-clock-history me-1"></i> {{ pedido.estado_pedido }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center p-4 text-muted">Este cliente aún no ha realizado ningún pedido.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include "componentes/modals_crud.html" with titulo_crear="Registrar Nuevo Pedido Comercial" icono_modulo="bi bi-cart-plus-fill" id_modal_crear="modalNuevoPedido" action_crear="" campos_modal=campos_pedido %}
+
+</div>
+{% endblock %}

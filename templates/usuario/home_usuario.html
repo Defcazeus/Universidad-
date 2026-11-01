@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi panel | Serviautomotriz Fernández{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6 font-sans text-slate-900 bg-slate-50 min-h-screen">
+    <!-- Header Superior Centrado y Nivelado -->
+      <header class="bg-slate-900 text-white rounded-2xl p-6 md:p-8 border-b-4 border-orange-500 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+            <span class="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">Bienvenido de vuelta</span>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-black tracking-tight uppercase leading-tight">
+            Cliente: {{ request.user.first_name|default:request.user }}
+          </h1>
+          <p class="text-xs md:text-sm text-slate-400 font-medium">
+            Monitorea tus vehículos registrados y consulta el estado de tus citas programadas en el taller.
+          </p>
+        </div>
+      </header>
+  <!-- Listado de Vehículos -->
+
+</div>
+
+<!-- MODAL EDITAR VEHÍCULO -->
+<div id="modalEditar" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border-4 border-slate-900 overflow-hidden">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Editar Ficha de Vehículo</h3>
+      </div>
+      <button onclick="closeModal('modalEditar')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <form id="formEditar" method="POST" class="p-6 space-y-4">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Placa (Bloqueada)</label>
+          <input type="text" id="edit_placa_dis" disabled class="w-full px-3 py-2 bg-slate-200 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-600 uppercase">
+          <input type="hidden" name="placa" id="hidden_placa">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Año <span class="text-red-600">*</span></label>
+          <input type="number" name="anno" id="edit_anno" required min="1950" max="2030" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Marca <span class="text-red-600">*</span></label>
+          <input type="text" name="marca" id="edit_marca" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Modelo <span class="text-red-600">*</span></label>
+          <input type="text" name="modelo" id="edit_modelo" required class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Observaciones / Detalles</label>
+        <textarea name="descripcion" id="edit_descripcion" rows="2" class="w-full px-3 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-orange-500 focus:bg-white resize-none"></textarea>
+      </div>
+
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-200">
+        <button type="button" onclick="closeModal('modalEditar')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-900 hover:bg-black text-white transition">Aplicar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL VER DETALLES -->
+<div id="modalVer" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border-4 border-slate-900 overflow-hidden p-6 space-y-4">
+    <div class="flex justify-between items-start border-b-2 border-slate-100 pb-3">
+      <div>
+        <span class="inline-block px-2.5 py-1 bg-slate-900 text-orange-400 font-mono text-xs font-black rounded-md mb-2 uppercase" id="view_placa">---</span>
+        <h3 id="view_vehiculo" class="text-lg font-black uppercase text-slate-900">---</h3>
+      </div>
+      <button onclick="closeModal('modalVer')" class="text-slate-400 hover:text-slate-900 font-mono text-xl">&times;</button>
+    </div>
+
+    <div class="space-y-3 text-xs">
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Año del Vehículo</span>
+        <p id="view_anno" class="font-mono text-slate-900 font-bold text-sm">---</p>
+      </div>
+      <div>
+        <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalles / Observaciones</span>
+        <p id="view_descripcion" class="text-slate-800 font-medium">---</p>
+      </div>
+    </div>
+
+    <button onclick="closeModal('modalVer')" class="w-full py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider rounded-xl transition">Cerrar Ficha</button>
+  </div>
+</div>
+
+<!-- MODAL HISTORIAL DEL VEHÍCULO -->
+<div id="modalHistorial" class="fixed inset-0 z-50 hidden bg-slate-950/80 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border-4 border-slate-900 overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="p-5 border-b-2 border-slate-900 flex justify-between items-center bg-slate-900 text-white">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+        <h3 class="text-sm font-black uppercase tracking-widest">Historial Mantenimiento</h3>
+        <span id="historial_placa_badge" class="ml-2 px-2 py-0.5 bg-orange-500 text-white font-mono text-xs rounded uppercase font-bold">---</span>
+      </div>
+      <button onclick="closeModal('modalHistorial')" class="text-slate-400 hover:text-white font-mono text-xl transition">&times;</button>
+    </div>
+
+    <div class="p-6 overflow-y-auto space-y-4 text-xs" id="historialContenido">
+      <div class="text-center py-8 text-slate-500 font-bold uppercase">
+        Cargando historial del vehículo...
+      </div>
+    </div>
+
+    <div class="p-4 bg-slate-100 border-t border-slate-200 flex justify-end">
+      <button
+        type="button"
+        onclick="closeModal('modalHistorial')"
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <span>Volver</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+  function setVal(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  }
+
+  async function fetchVehiculoData(placa) {
+    try {
+      const res = await fetch(`api/${placa}/`);
+      if (!res.ok) throw new Error();
+      return await res.json();
+    } catch {
+      alert("Error al comunicarse con el servidor");
+    }
+  }
+
+  async function verVehiculo(placa) {
+    const data = await fetchVehiculoData(placa);
+    if (!data) return;
+
+    document.getElementById('view_placa').textContent = data.placa;
+    document.getElementById('view_vehiculo').textContent = `${data.marca} ${data.modelo}`;
+    document.getElementById('view_anno').textContent = data.anno;
+    document.getElementById('view_descripcion').textContent = data.descripcion || 'Sin observaciones registradas.';
+
+    openModal('modalVer');
+  }
+
+  async function editarVehiculo(placa) {
+    const data = await fetchVehiculoData(placa);
+    if (!data) return;
+
+    const formEditar = document.getElementById('formEditar');
+    if (formEditar) formEditar.action = `vehiculos/editar/${placa}/`;
+
+    setVal('edit_placa_dis', data.placa || '');
+    setVal('hidden_placa', data.placa || '');
+
+    setVal('edit_marca', data.marca || '');
+    setVal('edit_modelo', data.modelo || '');
+    setVal('edit_anno', data.anno || '');
+    setVal('edit_descripcion', data.descripcion || '');
+
+    openModal('modalEditar');
+  }
+
+  async function verHistorial(placa) {
+    document.getElementById('historial_placa_badge').textContent = placa;
+    const container = document.getElementById('historialContenido');
+    container.innerHTML = `<div class="text-center py-8 text-slate-500 font-bold uppercase">Cargando registros...</div>`;
+    openModal('modalHistorial');
+
+    try {
+      const res = await fetch(`api/historial/${placa}/`);
+      if (!res.ok) throw new Error();
+      const registros = await res.json();
+
+      if (!registros || registros.length === 0) {
+        container.innerHTML = `
+          <div class="py-8 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+            <p class="text-slate-500 font-bold uppercase text-xs">No existen mantenimientos ni servicios registrados para este vehículo.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = `<div class="space-y-3">`;
+      registros.forEach(item => {
+        html += `
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-1">
+            <div class="flex justify-between items-center">
+              <span class="font-mono text-orange-600 font-black text-xs">${item.fecha || 'Fecha N/A'}</span>
+              <span class="px-2 py-0.5 bg-slate-200 text-slate-800 font-bold text-[10px] rounded uppercase">${item.tipo || 'Servicio'}</span>
+            </div>
+            <h4 class="font-bold text-slate-900 text-sm">${item.servicio || 'Mantenimiento General'}</h4>
+            <p class="text-slate-600 text-xs">${item.detalle || item.descripcion || 'Sin detalles especificados.'}</p>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+
+    } catch (err) {
+      container.innerHTML = `
+        <div class="py-6 text-center text-red-500 font-bold uppercase text-xs">
+          Ocurrió un inconveniente al obtener los registros de historial.
+        </div>
+      `;
+    }
+  }
+</script>
+<script src="{% static 'js/validaciones.js' %}"></script>
+{% endblock %}

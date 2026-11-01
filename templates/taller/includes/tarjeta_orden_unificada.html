@@ -1,0 +1,122 @@
+<div class="card-pedido bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3 border-l-4 {{ bg_border }}">
+  
+  <!-- CABECERA: CÓDIGO DE PEDIDO + TIMER (SI ESTÁ PENDIENTE) -->
+  <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+    <span class="px-2.5 py-0.5 bg-slate-900 text-orange-400 font-mono text-[10px] font-black rounded uppercase">
+      #{{ pedido.cod_pedido|stringformat:".8s" }}
+    </span>
+
+    {% if pedido.estado_pedido|upper == 'PENDIENTE' %}
+      <span 
+        class="timer-expiracion px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-mono font-bold rounded"
+        data-fecha="{{ pedido.fecha_pedido|date:'Y-m-d\TH:i:s' }}"
+      >
+        Calculando...
+      </span>
+    {% else %}
+      <span class="text-[10px] font-mono font-bold text-slate-400">
+        {{ pedido.fecha_pedido|date:"d/m/Y H:i" }}
+      </span>
+    {% endif %}
+  </div>
+
+  <!-- INFORMACIÓN DEL CLIENTE Y TOTAL -->
+  <div class="flex items-start justify-between gap-2">
+    <div>
+      <h4 class="text-xs font-black text-slate-900 uppercase truncate max-w-[150px]">
+        {{ pedido.cedula_usuario.get_full_name|default:pedido.cedula_usuario.username }}
+      </h4>
+      <p class="text-[10px] font-mono font-bold text-slate-500">
+        CI: {{ pedido.cedula_usuario.cedula|default:pedido.cedula_usuario.cedula_usuario }}
+      </p>
+    </div>
+    <div class="text-right">
+      <span class="text-xs font-black font-mono text-orange-600 block">${{ pedido.total }}</span>
+      <span class="text-[9px] font-mono font-bold text-slate-400 block">BS. {{ pedido.total_bolivares }}</span>
+    </div>
+  </div>
+
+  <!-- DESGLOSE COMPACTO DE ÍTEMS -->
+  <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 space-y-1">
+    <div class="flex justify-between items-center text-[9px] font-black uppercase text-slate-400">
+      <span>Ítems Cargados:</span>
+      <span class="text-slate-600 font-bold">{{ pedido.pedidodetalle_set.count }}</span>
+    </div>
+    <ul class="space-y-0.5 max-h-16 overflow-y-auto custom-scroll text-[10px]">
+      {% for det in pedido.pedidodetalle_set.all %}
+        <li class="flex justify-between items-center text-slate-700">
+          <span class="truncate">
+            • {% if det.id_producto %}{{ det.id_producto.nombre }}{% elif det.id_cat_servicio %}{{ det.id_cat_servicio.nombre }}{% else %}{{ det.descripcion_manual }}{% endif %}
+          </span>
+          <span class="font-mono font-bold text-slate-600">${{ det.subtotal }}</span>
+        </li>
+      {% empty %}
+        <li class="text-slate-400 italic">Sin ítems registrados.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- INDICADOR DE DELIVERY / RETIROS -->
+  <div class="flex items-center justify-between text-[10px] pt-1">
+    {% if pedido.es_delivery %}
+      <span class="px-2 py-0.5 bg-purple-50 text-purple-700 font-bold border border-purple-200 rounded flex items-center gap-1">
+        🚚 Delivery
+      </span>
+    {% else %}
+      <span class="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold rounded">
+        🏪 Retiro Local
+      </span>
+    {% endif %}
+
+    <button 
+      type="button" 
+      onclick="verDetallePedido('{{ pedido.cod_pedido }}')"
+      class="text-blue-600 hover:text-blue-800 font-bold text-[10px] underline"
+    >
+      Ver Información
+    </button>
+  </div>
+
+  <!-- BOTONES DE ACCIÓN SEGÚN LA FASE OPERATIVA -->
+  <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-1">
+    
+    {% if pedido.estado_pedido|upper == 'PENDIENTE' %}
+      <button 
+        type="button" 
+        onclick="abrirModalGestionItems('{{ pedido.cod_pedido }}')"
+        class="px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded text-[10px] font-bold border border-orange-200 transition"
+      >
+        + Cargo
+      </button>
+
+      <button 
+        type="button" 
+        onclick="cancelarPedidoDirecto('{{ pedido.cod_pedido }}')"
+        class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded text-[10px] font-bold border border-rose-200 transition"
+      >
+        ✕ Cancelar
+      </button>
+
+    {% elif pedido.estado_pedido|upper == 'EN_PROCESO' or pedido.estado_pedido|upper == 'EN PROCESO' %}
+      <button 
+        type="button" 
+        onclick="verDetallePedido('{{ pedido.cod_pedido }}')"
+        class="w-full py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold transition text-center shadow-sm"
+      >
+        Verificar y Procesar Pago →
+      </button>
+
+    {% elif pedido.estado_pedido|upper == 'COMPLETADO' %}
+      <span class="w-full text-center text-[10px] font-bold text-emerald-600 py-0.5 bg-emerald-50 rounded border border-emerald-200">
+        ✓ Venta Completada
+      </span>
+
+    {% elif pedido.estado_pedido|upper == 'CANCELADO' %}
+      <span class="w-full text-center text-[10px] font-bold text-rose-600 py-0.5 bg-rose-50 rounded border border-rose-200">
+        ✕ Orden Anulada
+      </span>
+    {% endif %}
+
+  </div>
+
+</div>

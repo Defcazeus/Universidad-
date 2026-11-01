@@ -1,0 +1,1034 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi Carrito de Compras - Serviautomotriz Fernández{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/compra_venta/style_venta_repuesto.css' %}" />
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet" />
+<style>
+    body {
+        background-color: #f4f6f9 !important;
+    }
+    .cart-wrapper {
+        padding: 40px 0;
+    }
+    .premium-card {
+        background: var(--blanco, #ffffff);
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        border: none;
+        overflow: hidden;
+    }
+    .orange-border-top {
+        border-top: 5px solid var(--naranja, #ff5722);
+    }
+    .dark-border-top {
+        border-top: 5px solid var(--oscuro, #212529);
+    }
+    .cart-table th {
+        background-color: var(--oscuro, #212529) !important;
+        color: white !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+    .quantity-control {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .btn-qty {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        background: white;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: var(--oscuro, #212529);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .btn-qty:hover {
+        background: var(--naranja, #ff5722);
+        color: white;
+        border-color: var(--naranja, #ff5722);
+    }
+    .checkout-summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+    }
+    .checkout-summary-row.total {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--oscuro, #212529);
+        border-top: 1px solid #eee;
+        padding-top: 12px;
+        margin-top: 12px;
+    }
+    .btn-checkout {
+        background-color: var(--naranja, #ff5722);
+        color: white;
+        font-weight: 700;
+        text-transform: uppercase;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        width: 100%;
+        transition: all 0.3s;
+        display: block;
+        text-align: center;
+        text-decoration: none;
+        box-shadow: 0 4px 10px rgba(255, 87, 34, 0.2);
+    }
+    .btn-checkout:hover {
+        background-color: #e64a19;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(255, 87, 34, 0.3);
+    }
+    .product-img-thumb {
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #eee;
+    }
+    .modal-header-custom {
+        background-color: var(--oscuro, #212529);
+        color: white;
+        border-top: 4px solid var(--naranja, #ff5722);
+    }
+    .pago-info-card {
+        background-color: #f8f9fa;
+        border: 1px solid #e3e6f0;
+        border-radius: 10px;
+        padding: 15px;
+    }
+    .copy-btn {
+        background-color: #ff5722;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .copy-btn:hover {
+        background-color: #e64a19;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="breadcrumbs-bar" style="background-color: #fff; border-bottom: 1px solid #eef2f5; padding: 12px 0;">
+    <div class="container d-flex align-items-center">
+        <a href="{% url 'inicio_tienda' %}" style="text-decoration: none; color: var(--oscuro); font-weight: 600;">Tienda</a>
+        <span class="breadcrumb-separator" style="margin: 0 10px; color: #aaa;">&gt;</span>
+        <span class="breadcrumb-item active" style="color: var(--naranja); font-weight: 700;">Mi Carrito</span>
+    </div>
+</div>
+
+<div class="container cart-wrapper">
+    <!-- Contenedor dinámico de Alertas AJAX -->
+    <div id="alert-container" class="row mb-3" style="display: none;">
+        <div class="col-12">
+            <div id="alert-box" class="alert alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 10px;">
+                <span id="alert-message"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensajes de Django -->
+    {% if messages %}
+        <div class="row mb-3">
+            <div class="col-12">
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 10px;">
+                        <i class="bi {% if message.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="pb-2" style="color: var(--oscuro); font-weight: 800; border-bottom: 2px solid #eef2f5;">
+                <i class="bi bi-cart3 me-2" style="color: var(--naranja);"></i>CARRITO DE COMPRAS
+            </h2>
+            <p class="text-muted">Revisa tus repuestos seleccionados y completa tu orden.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Detalle de Carrito (Izquierda) -->
+        <div class="col-lg-8 mb-4">
+            <div class="premium-card dark-border-top p-4">
+                <h4 class="mb-4" style="font-weight: 700; color: var(--oscuro);">Artículos Seleccionados</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle cart-table">
+                        <thead>
+                            <tr>
+                                <th class="p-3 text-center">Imagen</th>
+                                <th class="p-3">Repuesto / SKU</th>
+                                <th class="p-3">Categoría</th>
+                                <th class="p-3 text-center">Cantidad</th>
+                                <th class="p-3 text-end">P. Unitario</th>
+                                <th class="p-3 text-end">Subtotal</th>
+                                <th class="p-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-items-body">
+                            {% for item_info in items_con_subtotal %}
+                            <tr id="row-item-{{ item_info.item.id_producto.id_producto }}">
+                                <td class="p-3 text-center">
+                                    {% if item_info.item.id_producto.imagen_url %}
+                                        <img src="{{ item_info.item.id_producto.imagen_url }}" alt="{{ item_info.item.id_producto.nombre }}" class="product-img-thumb">
+                                    {% else %}
+                                        <div class="d-inline-flex align-items-center justify-content-center bg-light text-muted fw-bold" style="width: 50px; height: 50px; border-radius: 6px; font-size: 10px; border: 1px dashed #ccc;">N/A</div>
+                                    {% endif %}
+                                </td>
+                                <td class="p-3">
+                                    <span class="d-block fw-bold text-dark">{{ item_info.item.id_producto.nombre }}</span>
+                                    <small class="font-monospace text-muted fw-bold">SKU: {{ item_info.item.id_producto.sku }}</small>
+                                </td>
+                                <td class="p-3">
+                                    <span class="badge bg-light text-dark border">{{ item_info.item.id_producto.id_cat_producto.nombre|default:"General" }}</span>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <div class="quantity-control">
+                                        <form method="POST" action="{% url 'actualizar_carrito' item_info.item.id_producto.id_producto 'restar' %}" class="ajax-cart-form d-inline p-0 m-0 shadow-none">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-qty">-</button>
+                                        </form>
+
+                                        <span id="cantidad-{{ item_info.item.id_producto.id_producto }}" class="fw-bold px-2">{{ item_info.item.cantidad }}</span>
+
+                                        <form method="POST" action="{% url 'actualizar_carrito' item_info.item.id_producto.id_producto 'sumar' %}" class="ajax-cart-form d-inline p-0 m-0 shadow-none">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-qty">+</button>
+                                        </form>
+                                    </div>
+                                </td>
+                                <td class="p-3 text-end fw-bold text-secondary">${{ item_info.item.id_producto.precio_venta }}</td>
+                                <td id="subtotal-item-{{ item_info.item.id_producto.id_producto }}" class="p-3 text-end fw-bold text-dark">${{ item_info.subtotal }}</td>
+                                <td class="p-3 text-center">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger btn-eliminar-item" 
+                                            data-url="{% url 'eliminar_del_carrito' item_info.item.id_producto.id_producto %}" 
+                                            data-id="{{ item_info.item.id_producto.id_producto }}"
+                                            title="Eliminar del Carrito" 
+                                            style="border-radius: 6px; padding: 5px 8px;">
+                                        <i class="bi bi-trash3-fill"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center p-5 text-muted">
+                                    <i class="bi bi-cart-x d-block text-secondary mb-3" style="font-size: 3rem;"></i>
+                                    <h5 class="fw-bold">Tu carrito está vacío</h5>
+                                    <p class="mb-4">Explora nuestro amplio catálogo de repuestos y autopartes de alta calidad.</p>
+                                    <a href="{% url 'inicio_tienda' %}" class="btn px-4 text-white fw-bold" style="background-color: var(--naranja); border-radius: 8px;">
+                                        Volver a la Tienda
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if items_con_subtotal %}
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                    <a href="{% url 'inicio_tienda' %}" class="btn btn-outline-dark fw-bold" style="border-radius: 8px;">
+                        <i class="bi bi-arrow-left me-2"></i>Seguir Comprando
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Resumen del Pedido (Derecha) -->
+        {% if items_con_subtotal %}
+        <div class="col-lg-4 mb-4" id="cart-summary-card">
+            <div class="premium-card orange-border-top p-4">
+                <h4 class="mb-4" style="font-weight: 700; color: var(--oscuro); text-align: center;">Resumen del Pedido</h4>
+                
+                <div class="mb-4">
+                    <div class="checkout-summary-row">
+                        <span class="text-muted">Subtotal:</span>
+                        <span id="cart-subtotal" class="fw-semibold text-dark">${{ subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="checkout-summary-row">
+                        <span class="text-muted">IVA (16%):</span>
+                        <span id="cart-iva" class="fw-semibold text-dark">${{ iva|floatformat:2 }}</span>
+                    </div>
+                    <div class="checkout-summary-row total">
+                        <span>Total a Pagar ($):</span>
+                        <span id="cart-total" style="color: var(--naranja);">${{ total|floatformat:2 }}</span>
+                    </div>
+                    <div class="checkout-summary-row text-muted small mt-2 pt-2 border-top">
+                        <span>Total en Bolívares:</span>
+                        <span id="cart-total-bs" class="fw-bold text-dark">Bs. {{ total_bs|floatformat:2 }}</span>
+                    </div>
+                    <div class="text-end text-muted small mt-1" style="font-size: 0.8rem;">
+                        <span>Tasa Oficial BCV: <strong id="cart-tasa-bcv">{{ tasa_bcv|floatformat:4 }}</strong> Bs/USD</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-checkout border-0" data-bs-toggle="modal" data-bs-target="#modalProcesarPago">
+                    <i class="bi bi-credit-card-fill me-2"></i>Procesar Pedido / Pago
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- MODAL 1: PROCESAR Y REGISTRAR PAGO -->
+<div class="modal fade" id="modalProcesarPago" tabindex="-1" aria-labelledby="modalProcesarPagoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title fw-bold" id="modalProcesarPagoLabel">
+                    <i class="bi bi-shield-check me-2" style="color: var(--naranja);"></i>Completar Orden y Registrar Pago
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="formProcesarPago" method="POST" action="{% url 'procesar_compra' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <!-- MONTO TOTAL EN USD Y BS -->
+                    <div class="text-center mb-4 p-3 rounded" style="background-color: #f8f9fa; border: 1px dashed #ff5722;">
+                        <span class="text-muted d-block small">Monto Total a Confirmar:</span>
+                        <h2 id="modal-total-amount" class="fw-bold mb-1" style="color: var(--naranja);">${{ total|floatformat:2 }}</h2>
+                        <div class="d-inline-block px-3 py-1 bg-white rounded border mt-1 shadow-sm">
+                            <span class="text-muted small">Equivalente en Bolívares: </span>
+                            <strong id="modal-total-bs" class="text-dark fs-6">Bs. {{ total_bs|floatformat:2 }}</strong>
+                            <span class="text-muted small ms-1">(Tasa BCV: <span id="modal-tasa-bcv">{{ tasa_bcv|floatformat:4 }}</span>)</span>
+                        </div>
+                    </div>
+
+                    <!-- GESTIÓN DE TIPO DE ENTREGA -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark d-flex align-items-center">
+                            <i class="bi bi-truck text-primary me-2"></i>Tipo de Entrega / Despacho
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="delivery-option-card d-block p-3 border rounded-3 text-center h-100 position-relative" id="card_entrega_retiro" style="cursor: pointer; border-width: 2px !important; border-color: var(--naranja) !important; background-color: #fff8f5;">
+                                    <input type="radio" name="tipo_entrega" id="radio_retiro" value="Retiro" class="d-none" checked>
+                                    <i class="bi bi-shop fs-3 d-block text-secondary mb-1"></i>
+                                    <strong class="d-block text-dark">Retiro en Tienda</strong>
+                                    <small class="text-muted d-block">Retira en taller físico</small>
+                                    <span class="badge bg-success-subtle text-success small mt-1">Sin costo adicional</span>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="delivery-option-card d-block p-3 border rounded-3 text-center h-100 position-relative" id="card_entrega_delivery" style="cursor: pointer; border-width: 2px !important; border-color: #dee2e6; background-color: #ffffff;">
+                                    <input type="radio" name="tipo_entrega" id="radio_delivery" value="Delivery" class="d-none">
+                                    <i class="bi bi-bicycle fs-3 d-block text-secondary mb-1"></i>
+                                    <strong class="d-block text-dark">Envío a Domicilio</strong>
+                                    <small class="text-muted d-block">Despacho motorizado / flete</small>
+                                    <span class="badge bg-primary-subtle text-primary small mt-1">Servicio Delivery</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE DIRECCIÓN DE ENVÍO (VISIBLE SOLO SI DELIVERY) -->
+                    <div class="mb-4 p-3 rounded-3 border" id="bloque_direccion_envio" style="display: none; background-color: #f8f9fa;">
+                        <label class="form-label fw-bold text-dark" for="direccion_envio">
+                            <i class="bi bi-geo-alt-fill text-danger me-1"></i>Dirección Detallada de Entrega <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="direccion_envio" id="direccion_envio" class="form-control" rows="2" placeholder="Ej: Av. Principal, Urb. Los Robles, Casa #12, frente a la farmacia."></textarea>
+                        <small class="text-muted d-block mt-1">
+                            <i class="bi bi-info-circle me-1"></i>Especifica la dirección completa, número o color de casa y un punto de referencia para la entrega.
+                        </small>
+                        <input type="hidden" name="costo_envio" id="input_costo_envio" value="0.00">
+                    </div>
+
+                    <!-- SELECTOR DE MÉTODO DE PAGO -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">
+                            <i class="bi bi-wallet2 text-primary me-2"></i>Selecciona tu Método de Pago
+                        </label>
+                        <select name="metodo_pago" id="modal_metodo_pago" class="form-select p-3" style="border-radius: 8px; font-weight: 600;" required>
+                            <option value="" disabled selected>-- Selecciona un Método --</option>
+                            <option value="Pago Movil">Pago Móvil (Bolívares)</option>
+                            <option value="Transferencia">Transferencia Bancaria (Bolívares)</option>
+                        </select>
+                    </div>
+
+                    <!-- TARJETA DINÁMICA DE DATOS DE PAGO -->
+                    <div class="pago-info-card mb-4" id="bloque_datos_pago" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                            <h6 class="fw-bold mb-0 text-dark" id="titulo_datos_pago">
+                                <i class="bi bi-bank me-2 text-warning"></i>Datos para realizar tu Pago:
+                            </h6>
+                            <button type="button" id="btnCopiarDatos" class="btn btn-sm btn-outline-primary fw-bold">
+                                <i class="bi bi-clipboard me-1"></i>Copiar Datos
+                            </button>
+                        </div>
+
+                        <!-- CONTENEDOR DE DATOS DE PAGO MÓVIL -->
+                        <div id="datos_pago_movil_wrapper" style="display: none;">
+                            <table class="table table-borderless table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted" style="width: 150px;">Banco Destino:</td>
+                                        <td class="fw-bold"><span class="val-banco">0102 - BDV (Banco de Venezuela)</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Cédula / RIF:</td>
+                                        <td class="fw-bold font-monospace"><span class="val-cedula">J-503705264</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Teléfono Destino:</td>
+                                        <td class="fw-bold font-monospace"><span class="val-telefono">04242451539</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Monto Exacto:</td>
+                                        <td class="fw-bold text-danger">
+                                            <span id="pago_movil_monto_bs">Bs. {{ total_bs|floatformat:2 }}</span>
+                                            <small class="text-muted ms-1">($<span id="pago_movil_monto_usd">{{ total|floatformat:2 }}</span> USD)</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- CONTENEDOR DE DATOS DE TRANSFERENCIA -->
+                        <div id="datos_transferencia_wrapper" style="display: none;">
+                            <table class="table table-borderless table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted" style="width: 150px;">Titular:</td>
+                                        <td class="fw-bold"><span class="val-titular">Rony Matos</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Cédula / Pasaporte:</td>
+                                        <td class="fw-bold font-monospace"><span class="val-cedula">J-503705264</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Banco Destino:</td>
+                                        <td class="fw-bold"><span class="val-banco">0102 - BDV (Banco de Venezuela)</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">N° de Cuenta:</td>
+                                        <td class="fw-bold font-monospace"><span class="val-cuenta">01020000000000000000</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Teléfono (Opcional):</td>
+                                        <td class="fw-bold font-monospace"><span class="val-telefono">04242451539</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Monto Exacto:</td>
+                                        <td class="fw-bold text-danger">
+                                            <span id="transferencia_monto_bs">Bs. {{ total_bs|floatformat:2 }}</span>
+                                            <small class="text-muted ms-1">($<span id="transferencia_monto_usd">{{ total|floatformat:2 }}</span> USD)</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle me-1"></i>Realiza la operación desde tu banco con estos datos y confirma abajo.
+                        </small>
+                    </div>
+
+                    <!-- CAMPOS DEL FORMULARIO DE CONFIRMACIÓN -->
+                    <div id="bloque_formulario_transferencia" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark">Banco desde donde realiza el pago</label>
+                            <select name="banco_origen" id="banco_origen" class="form-select p-2" style="border-radius: 8px;">
+                                <option value="" disabled selected>Seleccione un banco...</option>
+                                <option value="Banco de Venezuela">Banco de Venezuela</option>
+                                <option value="Banesco">Banesco</option>
+                                <option value="Mercantil">Mercantil</option>
+                                <option value="BBVA Provincial">BBVA Provincial</option>
+                                <option value="BNC (Banco Nacional de Crédito)">BNC (Banco Nacional de Crédito)</option>
+                                <option value="Bancaribe">Bancaribe</option>
+                                <option value="Banco Exterior">Banco Exterior</option>
+                                <option value="Banco Bicentenario">Banco Bicentenario</option>
+                                <option value="Banco Fondo Común (BFC)">Banco Fondo Común (BFC)</option>
+                                <option value="Banco Tesoro">Banco del Tesoro</option>
+                                <option value="Bancamiga">Bancamiga</option>
+                            </select>
+                        </div>
+
+                        <!-- CONMUTADOR / SWITCH DE TIPO DE COMPROBANTE -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark d-block">
+                                <i class="bi bi-check2-square text-primary me-1"></i>¿Cómo deseas reportar tu comprobante?
+                            </label>
+
+                            <!-- Campo oculto para transmitir el valor al backend -->
+                            <input type="hidden" name="tipo_comprobante" id="tipo_comprobante" value="captura">
+
+                            <div class="btn-group w-100" role="group" aria-label="Tipo de Comprobante">
+                                <button type="button" class="btn btn-outline-primary active fw-bold py-2" id="btnSwitchCaptura">
+                                    <i class="bi bi-file-earmark-image me-1"></i>Captura / Imagen
+                                </button>
+                                <button type="button" class="btn btn-outline-primary fw-bold py-2" id="btnSwitchReferencia">
+                                    <i class="bi bi-hash me-1"></i>N° de Referencia
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- OPCIÓN 1: CAPTURA DEL COMPROBANTE -->
+                        <div class="mb-3" id="wrapper_campo_captura">
+                            <label class="form-label fw-bold text-dark">
+                                <i class="bi bi-file-earmark-image me-1 text-primary"></i>Captura del Comprobante de Pago
+                            </label>
+                            <input type="file" name="comprobante_img" id="comprobante_img" class="form-control p-2" accept="image/png, image/jpeg, image/jpg, image/webp" style="border-radius: 8px;">
+                            <small class="text-muted">Sube una captura de pantalla clara del comprobante (JPG, PNG, WEBP).</small>
+                        </div>
+
+                        <!-- OPCIÓN 2: NÚMERO DE REFERENCIA -->
+                        <div class="mb-3" id="wrapper_campo_referencia" style="display: none;">
+                            <label class="form-label fw-bold text-dark">
+                                <i class="bi bi-hash me-1 text-primary"></i>Número de Referencia
+                            </label>
+                            <input type="text" name="numero_referencia" id="numero_referencia" class="form-control p-2" placeholder="Ej: 12345678" style="border-radius: 8px;">
+                            <small class="text-muted">Ingresa los dígitos del número de referencia o recibo de tu operación.</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info d-flex align-items-center mb-0 mt-3" role="alert" style="border-radius: 10px;">
+                        <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                        <small>Tu orden generará un <strong>Pedido</strong> con su respectiva <strong>Factura</strong> y quedará en estado <strong>Pendiente / En Proceso</strong> hasta su confirmación.</small>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-0 p-3">
+                    <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                    <button type="submit" id="btnConfirmarPago" class="btn text-white fw-bold px-4" style="background-color: var(--naranja); border-radius: 8px;">
+                        <i class="bi bi-check-circle-fill me-2"></i>Confirmar y Generar Pedido
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: CONFIRMACIÓN Y ESPERA DE VERIFICACIÓN -->
+<div class="modal fade" id="modalEsperaConfirmacion" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg text-center p-4" style="border-radius: 20px;">
+            <div class="modal-body">
+                <div class="mb-3">
+                    <i class="bi bi-clock-history text-warning" style="font-size: 4.5rem;"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-2">¡Pago Notificado Exitosamente!</h3>
+                <p class="text-muted mb-4">
+                    Hemos recibido la notificación de tu pedido y generado la factura correspondiente. Por favor, <strong>espera a que nuestro equipo verifique y confirme la transacción</strong>.
+                </p>
+                <div class="p-3 mb-4 rounded bg-light border">
+                    <span class="d-block text-muted small">Estado actual de la transacción:</span>
+                    <span class="badge bg-warning text-dark fs-6 mt-1"><i class="bi bi-hourglass-split me-1"></i>Pendiente de Verificación</span>
+                </div>
+                <button type="button" class="btn text-white fw-bold w-100 p-3" style="background-color: var(--oscuro); border-radius: 10px;" onclick="window.location.href='{% url 'inicio_tienda' %}'">
+                    Entendido, volver a la tienda
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+function copiarTexto(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    const textToCopy = element.innerText;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('Copiado al portapapeles: ' + textToCopy);
+    }).catch(err => {
+        console.error('Error al copiar: ', err);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    function getCSRFToken() {
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        return csrfInput ? csrfInput.value : '';
+    }
+
+    function mostrarAlerta(mensaje, tipo) {
+        const container = document.getElementById('alert-container');
+        const box = document.getElementById('alert-box');
+        const msgSpan = document.getElementById('alert-message');
+
+        if (box && msgSpan && container) {
+            box.className = `alert alert-${tipo === 'error' ? 'danger' : 'success'} alert-dismissible fade show shadow-sm`;
+            msgSpan.innerHTML = `<i class="bi ${tipo === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'} me-2"></i>${mensaje}`;
+            container.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function actualizarTotales(data) {
+        const elSubtotal = document.getElementById('cart-subtotal');
+        const elIva = document.getElementById('cart-iva');
+        const elTotal = document.getElementById('cart-total');
+        const elTotalBs = document.getElementById('cart-total-bs');
+        const elTasaBcv = document.getElementById('cart-tasa-bcv');
+
+        const modalTotal = document.getElementById('modal-total-amount');
+        const modalTotalBs = document.getElementById('modal-total-bs');
+        const modalTasaBcv = document.getElementById('modal-tasa-bcv');
+
+        const pmBs = document.getElementById('pago_movil_monto_bs');
+        const pmUsd = document.getElementById('pago_movil_monto_usd');
+        const trBs = document.getElementById('transferencia_monto_bs');
+        const trUsd = document.getElementById('transferencia_monto_usd');
+
+        if (elSubtotal) elSubtotal.textContent = `$${data.subtotal_general}`;
+        if (elIva) elIva.textContent = `$${data.iva_general}`;
+        if (elTotal) elTotal.textContent = `$${data.total_general}`;
+        if (modalTotal) modalTotal.textContent = `$${data.total_general}`;
+
+        if (data.total_bs) {
+            if (elTotalBs) elTotalBs.textContent = `Bs. ${data.total_bs}`;
+            if (modalTotalBs) modalTotalBs.textContent = `Bs. ${data.total_bs}`;
+            if (pmBs) pmBs.textContent = `Bs. ${data.total_bs}`;
+            if (trBs) trBs.textContent = `Bs. ${data.total_bs}`;
+        }
+        if (data.total_general) {
+            if (pmUsd) pmUsd.textContent = data.total_general;
+            if (trUsd) trUsd.textContent = data.total_general;
+        }
+        if (data.tasa_bcv) {
+            if (elTasaBcv) elTasaBcv.textContent = data.tasa_bcv;
+            if (modalTasaBcv) modalTasaBcv.textContent = data.tasa_bcv;
+        }
+    }
+
+    // --- MANEJO DEL TIPO DE ENTREGA (RETIRO / DELIVERY) ---
+    const radioRetiro = document.getElementById('radio_retiro');
+    const radioDelivery = document.getElementById('radio_delivery');
+    const cardRetiro = document.getElementById('card_entrega_retiro');
+    const cardDelivery = document.getElementById('card_entrega_delivery');
+    const bloqueDireccion = document.getElementById('bloque_direccion_envio');
+    const inputDireccion = document.getElementById('direccion_envio');
+
+    function actualizarTipoEntregaUI() {
+        if (radioDelivery && radioDelivery.checked) {
+            if (cardDelivery) {
+                cardDelivery.style.borderColor = 'var(--naranja)';
+                cardDelivery.style.backgroundColor = '#fff8f5';
+            }
+            if (cardRetiro) {
+                cardRetiro.style.borderColor = '#dee2e6';
+                cardRetiro.style.backgroundColor = '#ffffff';
+            }
+            if (bloqueDireccion) bloqueDireccion.style.display = 'block';
+            if (inputDireccion) {
+                inputDireccion.required = true;
+                inputDireccion.focus();
+            }
+        } else {
+            if (cardRetiro) {
+                cardRetiro.style.borderColor = 'var(--naranja)';
+                cardRetiro.style.backgroundColor = '#fff8f5';
+            }
+            if (cardDelivery) {
+                cardDelivery.style.borderColor = '#dee2e6';
+                cardDelivery.style.backgroundColor = '#ffffff';
+            }
+            if (bloqueDireccion) bloqueDireccion.style.display = 'none';
+            if (inputDireccion) {
+                inputDireccion.required = false;
+            }
+        }
+    }
+
+    if (cardRetiro && cardDelivery) {
+        cardRetiro.addEventListener('click', function() {
+            if (radioRetiro) radioRetiro.checked = true;
+            actualizarTipoEntregaUI();
+        });
+        cardDelivery.addEventListener('click', function() {
+            if (radioDelivery) radioDelivery.checked = true;
+            actualizarTipoEntregaUI();
+        });
+    }
+
+    // --- MANEJO DE SUMAR / RESTAR CANTIDAD AJAX ---
+    document.querySelectorAll('.ajax-cart-form').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const url = this.getAttribute('action');
+            const formData = new FormData(this);
+            const fila = this.closest('tr');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'error') {
+                    mostrarAlerta(data.mensaje, 'error');
+                    return;
+                }
+
+                if (data.status === 'success') {
+                    if (data.cart_count === 0) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    if (fila) {
+                        const idProducto = fila.id.replace('row-item-', '');
+                        const cntElem = document.getElementById(`cantidad-${idProducto}`);
+                        const subtotalElem = document.getElementById(`subtotal-item-${idProducto}`);
+
+                        if (cntElem) cntElem.textContent = data.cantidad;
+                        if (subtotalElem) subtotalElem.textContent = `$${data.subtotal_item}`;
+                    }
+
+                    actualizarTotales(data);
+                }
+            } catch (err) {
+                console.error('Error al actualizar cantidad:', err);
+            }
+        });
+    });
+
+    // --- MANEJO DE ELIMINAR PRODUCTO AJAX ---
+    document.querySelectorAll('.btn-eliminar-item').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+
+            const targetBtn = e.target.closest('.btn-eliminar-item');
+            if (!targetBtn) return;
+
+            const url = targetBtn.getAttribute('data-url');
+            const productId = targetBtn.getAttribute('data-id');
+            const fila = document.getElementById(`row-item-${productId}`);
+
+            if (!url) return;
+
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', getCSRFToken());
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'error') {
+                    mostrarAlerta(data.mensaje, 'error');
+                    return;
+                }
+
+                if (data.status === 'success') {
+                    if (data.mensaje) mostrarAlerta(data.mensaje, 'success');
+                    if (fila) fila.remove();
+
+                    if (data.cart_count === 0) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    actualizarTotales(data);
+                }
+            } catch (err) {
+                console.error('Error al eliminar producto:', err);
+            }
+        });
+    });
+
+    // --- CONTROLES DE MÉTODO DE PAGO Y COMPROBANTE ---
+    const selectMetodo = document.getElementById('modal_metodo_pago');
+    const bloqueDatos = document.getElementById('bloque_datos_pago');
+    const wrapperPagoMovil = document.getElementById('datos_pago_movil_wrapper');
+    const wrapperTransferencia = document.getElementById('datos_transferencia_wrapper');
+    const bloqueFormulario = document.getElementById('bloque_formulario_transferencia');
+    const tituloDatos = document.getElementById('titulo_datos_pago');
+    const btnCopiar = document.getElementById('btnCopiarDatos');
+
+    const inputHiddenTipo = document.getElementById('tipo_comprobante');
+    const btnSwitchCaptura = document.getElementById('btnSwitchCaptura');
+    const btnSwitchReferencia = document.getElementById('btnSwitchReferencia');
+    const wrapperCaptura = document.getElementById('wrapper_campo_captura');
+    const wrapperReferencia = document.getElementById('wrapper_campo_referencia');
+    const inputCaptura = document.getElementById('comprobante_img');
+    const inputReferencia = document.getElementById('numero_referencia');
+    const selectBancoOrigen = document.getElementById('banco_origen');
+
+    function cambiarTipoComprobante(tipo) {
+        if (!inputHiddenTipo) return;
+        inputHiddenTipo.value = tipo;
+
+        if (tipo === 'captura') {
+            btnSwitchCaptura.classList.add('active');
+            btnSwitchReferencia.classList.remove('active');
+
+            wrapperCaptura.style.display = 'block';
+            wrapperReferencia.style.display = 'none';
+
+            inputCaptura.required = true;
+            inputReferencia.required = false;
+            inputReferencia.value = '';
+        } else {
+            btnSwitchReferencia.classList.add('active');
+            btnSwitchCaptura.classList.remove('active');
+
+            wrapperCaptura.style.display = 'none';
+            wrapperReferencia.style.display = 'block';
+
+            inputCaptura.required = false;
+            inputCaptura.value = '';
+            inputReferencia.required = true;
+        }
+    }
+
+    if (btnSwitchCaptura && btnSwitchReferencia) {
+        btnSwitchCaptura.addEventListener('click', function () {
+            cambiarTipoComprobante('captura');
+        });
+        btnSwitchReferencia.addEventListener('click', function () {
+            cambiarTipoComprobante('referencia');
+        });
+    }
+
+    if (selectMetodo) {
+        selectMetodo.addEventListener('change', function () {
+            const valor = this.value;
+
+            if (valor === 'Pago Movil') {
+                tituloDatos.innerHTML = `<i class="bi bi-phone me-2 text-warning"></i>Datos para Pago Móvil:`;
+                wrapperPagoMovil.style.display = 'block';
+                wrapperTransferencia.style.display = 'none';
+                bloqueDatos.style.display = 'block';
+                bloqueFormulario.style.display = 'block';
+                selectBancoOrigen.required = true;
+                cambiarTipoComprobante(inputHiddenTipo ? inputHiddenTipo.value : 'captura');
+
+            } else if (valor === 'Transferencia') {
+                tituloDatos.innerHTML = `<i class="bi bi-bank me-2 text-warning"></i>Datos para Transferencia Bancaria:`;
+                wrapperPagoMovil.style.display = 'none';
+                wrapperTransferencia.style.display = 'block';
+                bloqueDatos.style.display = 'block';
+                bloqueFormulario.style.display = 'block';
+                selectBancoOrigen.required = true;
+                cambiarTipoComprobante(inputHiddenTipo ? inputHiddenTipo.value : 'captura');
+
+            } else {
+                bloqueDatos.style.display = 'none';
+                bloqueFormulario.style.display = 'none';
+                selectBancoOrigen.required = false;
+                inputCaptura.required = false;
+                inputReferencia.required = false;
+            }
+        });
+    }
+
+    if (btnCopiar) {
+        btnCopiar.addEventListener('click', copiarDatosVisibles);
+    }
+
+    // --- PROCESAR CREACIÓN DE PEDIDO Y REPORTE DE PAGO ---
+    const formPago = document.getElementById('formProcesarPago');
+    if (formPago) {
+        formPago.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Validar dirección si es Delivery
+            if (radioDelivery && radioDelivery.checked) {
+                if (!inputDireccion || !inputDireccion.value.trim()) {
+                    mostrarAlerta('Por favor especifica la dirección de entrega para la opción de Delivery.', 'error');
+                    if (inputDireccion) inputDireccion.focus();
+                    return;
+                }
+            }
+            
+            const btnSubmit = document.getElementById('btnConfirmarPago');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando orden...';
+            }
+    
+            const urlCrearPedido = this.getAttribute('action');
+            const formData = new FormData(this);
+    
+            try {
+                const response = await fetch(urlCrearPedido, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+    
+                const data = await response.json();
+    
+                if (response.ok && (data.status === 'success' || data.cod_pedido)) {
+                    const codPedido = data.cod_pedido;
+                    const metodoPago = document.getElementById('modal_metodo_pago').value;
+    
+                    if (codPedido && (metodoPago === 'Pago Movil' || metodoPago === 'Transferencia')) {
+                        const urlBaseReporte = "{% url 'pago_reportar' '00000000-0000-0000-0000-000000000000' %}";
+                        const urlReportarPago = urlBaseReporte.replace('00000000-0000-0000-0000-000000000000', codPedido);
+                        
+                        const responseReporte = await fetch(urlReportarPago, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        
+                        const dataReporte = await responseReporte.json();
+                        
+                        if (!responseReporte.ok || dataReporte.status === 'error') {
+                            throw new Error(dataReporte.mensaje || 'Error al registrar el reporte de pago.');
+                        }
+                    }
+    
+                    // Cierre de modal de pago y apertura del modal de confirmación
+                    const modalPagoElem = document.getElementById('modalProcesarPago');
+                    const modalPagoObj = bootstrap.Modal.getInstance(modalPagoElem) || new bootstrap.Modal(modalPagoElem);
+                    modalPagoObj.hide();
+    
+                    const modalEsperaObj = new bootstrap.Modal(document.getElementById('modalEsperaConfirmacion'));
+                    modalEsperaObj.show();
+                } else {
+                    mostrarAlerta(data.mensaje || 'Ocurrió un error al procesar el pedido.', 'error');
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirmar y Generar Pedido';
+                    }
+                }
+            } catch (err) {
+                console.error('Error en la transacción:', err);
+                mostrarAlerta(err.message || 'Ocurrió un error al procesar la solicitud.', 'error');
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Confirmar y Generar Pedido';
+                }
+            }
+        });
+    }
+});
+
+// Función para copiar los datos bancarios al portapapeles
+function copiarDatosVisibles() {
+    const selectMetodo = document.getElementById('modal_metodo_pago').value;
+    let textoACopiar = "";
+    const montoBs = document.getElementById('modal-total-bs')?.innerText || '';
+
+    if (selectMetodo === 'Pago Movil') {
+        const wrapper = document.getElementById('datos_pago_movil_wrapper');
+        const banco = wrapper.querySelector('.val-banco')?.innerText || '';
+        const cedula = wrapper.querySelector('.val-cedula')?.innerText || '';
+        const telefono = wrapper.querySelector('.val-telefono')?.innerText || '';
+
+        textoACopiar = `DATOS PAGO MÓVIL:
+` +
+                       `• Banco: ${banco}
+` +
+                       `• Cédula/RIF: ${cedula}
+` +
+                       `• Teléfono: ${telefono}
+` +
+                       `• Monto: ${montoBs}`;
+
+    } else if (selectMetodo === 'Transferencia') {
+        const wrapper = document.getElementById('datos_transferencia_wrapper');
+        const titular = wrapper.querySelector('.val-titular')?.innerText || '';
+        const cedula = wrapper.querySelector('.val-cedula')?.innerText || '';
+        const banco = wrapper.querySelector('.val-banco')?.innerText || '';
+        const cuenta = wrapper.querySelector('.val-cuenta')?.innerText || '';
+        const telefono = wrapper.querySelector('.val-telefono')?.innerText || '';
+
+        textoACopiar = `DATOS TRANSFERENCIA BANCARIA:
+` +
+                       `• Titular: ${titular}
+` +
+                       `• Cédula/Pasaporte: ${cedula}
+` +
+                       `• Banco: ${banco}
+` +
+                       `• N° Cuenta: ${cuenta}
+` +
+                       `• Teléfono: ${telefono}
+` +
+                       `• Monto: ${montoBs}`;
+    }
+
+    if (!textoACopiar) return;
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textoACopiar)
+            .then(() => notificarCopiaExitosa())
+            .catch(() => ejecutarCopiaFallback(textoACopiar));
+    } else {
+        ejecutarCopiaFallback(textoACopiar);
+    }
+}
+
+function ejecutarCopiaFallback(texto) {
+    const textarea = document.createElement("textarea");
+    textarea.value = texto;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-999999px";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        const exito = document.execCommand('copy');
+        if (exito) notificarCopiaExitosa();
+    } catch (err) {
+        console.error("Error al copiar los datos: ", err);
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+function notificarCopiaExitosa() {
+    const btn = document.getElementById('btnCopiarDatos');
+    if (!btn) return;
+
+    const contenidoOriginal = btn.innerHTML;
+    btn.innerHTML = `<i class="bi bi-check-lg me-1"></i>¡Copiado!`;
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-success');
+
+    setTimeout(() => {
+        btn.innerHTML = contenidoOriginal;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-primary');
+    }, 2000);
+}
+</script>
+{% endblock %}
