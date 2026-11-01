@@ -1,0 +1,21 @@
+    .custom-form-layout { display: flex; flex-direction: column; gap: 4px; }
+    .form-group-block { display: flex; flex-direction: column; margin-bottom: 16px; width: 100%; }
+    .form-row-grid { display: flex; gap: 16px; width: 100%; }
+    .form-row-grid .form-group-block { flex: 1; }
+    .full-width-block { flex: none !important; width: 100% !important; }
+    .form-label-custom { color: var(--oscuro-suave); font-size: 0.95rem; margin-bottom: 6px; font-weight: 500; text-align: left; }
+    .form-input-custom, .form-select-custom { width: 100%; padding: 12px; background-color: var(--oscuro) !important; border: 1px solid #444 !important; border-radius: 6px; color: var(--blanco) !important; font-size: 1rem; box-sizing: border-box; transition: var(--transicion); }
+    .form-input-custom:focus, .form-select-custom:focus { border-color: var(--naranja) !important; outline: none; box-shadow: 0 0 8px rgba(255, 102, 0, 0.3); }
+    
+    /* Maquetación de componentes compuestos (Cédula y Teléfono) */
+    .phone-input-container { display: flex; gap: 10px; width: 100%; }
+    .phone-code-select { width: 100px !important; flex-shrink: 0; }
+    .phone-number-input { flex-grow: 1; }
+
+    .btn-submit-custom { background-color: var(--naranja); color: var(--blanco); border: none; padding: 14px; font-size: 1.1rem; font-weight: 600; border-radius: 6px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; width: 100%; margin-top: 10px; transition: var(--transicion); }
+    .btn-submit-custom:hover { background-color: var(--naranja-oscuro); transform: translateY(-2px); }
+    .text-error-msg { color: #ff4d5a; font-size: 0.85rem; margin-top: 5px; text-align: left; }
+    .form-footer-link { margin-top: 20px; text-align: center; color: #aaa; }
+    .form-footer-link a { color: var(--naranja); text-decoration: none; font-weight: 500; transition: var(--transicion); }
+    .form-footer-link a:hover { color: var(--naranja-oscuro); text-decoration: underline; }
+    @media (max-width: 576px) { .form-row-grid { flex-direction: column; gap: 0px; } }

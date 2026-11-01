@@ -1,0 +1,74 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to bottom, #FFA500, #FFFFFF); /* Gradiente de naranja a blanco */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#login {
+    background-color: rgba(255, 255, 255, 0.9); /* Fondo semi-transparente para el formulario */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+}
+
+#login h2 {
+    margin-bottom: 20px;
+    color: #FFA500; /* Color naranja para el título */
+}
+
+#login img {
+    height: 150px;
+    width: auto;
+    margin-bottom: 20px;
+}
+
+#login form {
+    display: flex;
+    flex-direction: column;
+}
+
+#login label {
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+#login input {
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+#login button {
+    padding: 10px;
+    background-color: #FFA500;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#login button:hover {
+    background-color: #FF8C00;
+}
+
+#login a {
+    margin-top: 20px;
+    color: #FFA500;
+    text-decoration: none;
+}
+
+#login a:hover {
+    text-decoration: underline;
+}

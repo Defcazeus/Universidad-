@@ -1,0 +1,451 @@
+/* ==========================================================================
+   ESTILOS INTERNOS DEL PANEL DEL TALLER (MÓDULOS Y HOME INTERNO)
+   ========================================================================== */
+
+.taller-home-wrapper {
+    width: 100%;
+    margin-top: -20px; /* Compensa espacios en blanco superiores */
+}
+
+/* Sub-barra superior interna (Datos de control) */
+.taller-topbar-interna {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 25px;
+    background-color: var(--oscuro-suave);
+    color: var(--blanco);
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border-left: 4px solid var(--naranja);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.taller-fecha-hora {
+    display: flex;
+    gap: 30px;
+    font-size: 0.9rem;
+    color: #ced4da;
+}
+
+.taller-usuario-info {
+    font-size: 0.9rem;
+}
+.taller-usuario-info strong {
+    color: var(--naranja);
+}
+
+/* Disposición estructural del Panel de Control */
+.taller-layout-interno {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* Sidebar del ecosistema operativo */
+.taller-sidebar-interno {
+    background: var(--blanco);
+    border-radius: 16px;
+    padding: 25px 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+}
+
+.taller-sidebar-interno h2 {
+    margin: 0 0 20px 10px;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--oscuro);
+    font-weight: 700;
+}
+
+.taller-nav-links {
+    background-color: var(--blanco) ;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: static;
+}
+
+.taller-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 14px 16px;
+    background: var(--gris-fondo);
+    color: var(--oscuro);
+    text-decoration: none;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: var(--transicion);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.taller-link i {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+    color: var(--naranja);
+    transition: var(--transicion);
+}
+
+.taller-link:hover {
+    background: var(--blanco);
+    border-color: var(--naranja);
+    color: var(--naranja-oscuro);
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(255,102,0,0.08);
+}
+
+/* Contenedor principal de la data de control */
+.taller-main-interno {
+    background: var(--blanco);
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.taller-welcome h1 {
+    margin: 0;
+    font-size: 2.2rem;
+    color: var(--oscuro);
+    font-weight: 800;
+}
+
+.taller-welcome p {
+    margin: 10px 0 0;
+    color: #666;
+    font-size: 1rem;
+}
+
+/* Malla de tarjetas de estado (Overview) */
+.taller-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-top: 35px;
+}
+
+.taller-card {
+    background: var(--gris-fondo);
+    border-radius: 14px;
+    padding: 25px;
+    border: 1px solid #eef0f2;
+    transition: var(--transicion);
+}
+
+.taller-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--naranja);
+    background: var(--blanco);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.06);
+}
+
+.taller-card-icon {
+    width: 45px;
+    height: 45px;
+    background: rgba(255, 102, 0, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.taller-card-icon i {
+    color: var(--naranja);
+    font-size: 1.3rem;
+}
+
+.taller-card h3 {
+    margin: 0 0 10px;
+    font-size: 1.2rem;
+    color: var(--oscuro);
+    font-weight: 700;
+}
+
+.taller-card p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* RESPONSIVE DESIGN INTEGRADO */
+@media (max-width: 1100px) {
+    .taller-layout-interno {
+        grid-template-columns: 1fr;
+    }
+    .taller-sidebar-interno {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .taller-topbar-interna {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .taller-fecha-hora {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
+/* ==========================================================================
+   ESTILOS ESPECÍFICOS PARA EL MÓDULO DE CITAS
+   ========================================================================== */
+
+.btn-volver-menu {
+    text-decoration: none;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: var(--transicion);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-volver-menu:hover {
+    background-color: var(--naranja);
+    border-color: var(--naranja);
+    color: var(--oscuro);
+}
+
+.taller-link.active-link {
+    background: var(--oscuro);
+    color: var(--blanco);
+    border-left: 4px solid var(--naranja);
+}
+.taller-link.active-link i {
+    color: var(--naranja);
+}
+
+/* Grid de dos columnas para los formularios */
+.citas-grid-formularios {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 35px;
+    align-items: start;
+}
+
+.form-citas-box {
+    background: #fff;
+    border: 1px solid #eef0f2;
+    border-radius: 14px;
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.form-box-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 8px;
+}
+
+.icon-step {
+    width: 32px;
+    height: 32px;
+    background-color: var(--oscuro);
+    color: var(--naranja);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+.form-box-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--oscuro);
+    font-weight: 700;
+}
+
+.form-box-desc {
+    font-size: 0.88rem;
+    color: #666;
+    margin: 0 0 25px 0;
+}
+
+/* Controles de Formularios Custom */
+.input-group-custom {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.input-group-custom label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--oscuro-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-group-custom label i {
+    color: var(--naranja);
+    margin-right: 4px;
+    width: 16px;
+    text-align: center;
+}
+
+.input-group-custom input,
+.input-group-custom select,
+.input-group-custom textarea {
+    width: 100% !important;
+    padding: 11px 14px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    background-color: var(--gris-fondo) !important;
+    font-size: 0.95rem !important;
+    color: var(--oscuro) !important;
+    box-sizing: border-box !important;
+    margin-bottom: 0 !important; /* Limpia choques globales */
+    transition: var(--transicion);
+}
+
+.input-group-custom input:focus,
+.input-group-custom select:focus,
+.input-group-custom textarea:focus {
+    border-color: var(--naranja) !important;
+    background-color: #fff !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1) !important;
+}
+
+/* Filas combinadas (Marca/Modelo, Fecha/Hora) */
+.input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* Botones Operativos */
+.btn-taller-primary,
+.btn-taller-secondary {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: var(--transicion);
+    margin-top: 10px;
+}
+
+.btn-taller-primary {
+    background-color: var(--oscuro);
+    color: var(--blanco);
+    border: 1px solid transparent;
+}
+.btn-taller-primary:hover {
+    background-color: #000;
+    color: var(--naranja);
+}
+
+.btn-taller-secondary {
+    background-color: var(--naranja);
+    color: var(--blanco);
+}
+.btn-taller-secondary:hover {
+    background-color: var(--naranja-oscuro);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 102, 0, 0.2);
+}
+
+/* Responsive del formulario de citas */
+@media (max-width: 950px) {
+    .citas-grid-formularios {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+}
+
+/* ==========================================================================
+   ESTILOS ESPECÍFICOS PARA EL PORTAL DEL CLIENTE (VARIACIÓN VISUAL)
+   ========================================================================== */
+
+/* Suavizamos el fondo general cuando es el cliente */
+.rol-cliente {
+    background-color: #f4f6f9;
+    padding: 10px;
+    border-radius: 16px;
+}
+
+/* Cambiamos la barra de control superior a un estilo más corporativo */
+.rol-cliente .taller-topbar-interna {
+    background-color: var(--blanco);
+    color: var(--oscuro);
+    border-left: 4px solid #0066cc; /* Azul tecnológico para diferenciar del admin */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.rol-cliente .taller-usuario-info strong {
+    color: #0066cc;
+}
+
+/* Redondeado más amigable en los sidebars y tarjetas */
+.rol-cliente .taller-sidebar-interno,
+.rol-cliente .taller-main-interno {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 25px rgba(160, 175, 190, 0.15);
+}
+
+/* Cambiamos el color de acento de los iconos del cliente a un tono azul/tecnológico */
+.rol-cliente .taller-link i {
+    color: #0066cc;
+}
+
+/* Hover interactivo del menú del cliente */
+.rol-cliente .taller-link:hover {
+    border-color: #0066cc;
+    color: #0052a3;
+    background: rgba(0, 102, 204, 0.04);
+}
+
+/* Tarjeta especial de cupones de descuento */
+.rol-cliente .coupon-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.rol-cliente .coupon-card .taller-card-icon {
+    background: rgba(0, 102, 204, 0.1);
+}
+
+.rol-cliente .coupon-card .taller-card-icon i {
+    color: #0066cc;
+}
+
+.rol-cliente .badge-descuento {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 6px 14px;
+    background-color: #25D366; /* Verde de beneficio/activo */
+    color: white;
+    font-weight: 800;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    letter-spacing: 1px;
+    border: 1px dashed rgba(255,255,255,0.5);
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.2);
+}
